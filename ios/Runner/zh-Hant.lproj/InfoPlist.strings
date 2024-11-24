@@ -1,0 +1,10 @@
+/* 
+  InfoPlist.strings
+  Runner
+
+  Created by Lulin Y on 2022/2/18.
+  
+*/
+
+"CFBundleDisplayName" = "十五數字推盤";
+"NSUserTrackingUsageDescription" = "該標識符將用於向您投放個性化廣告";
