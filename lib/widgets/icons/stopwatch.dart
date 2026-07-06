@@ -9,15 +9,15 @@ class StopwatchIcon extends StatelessWidget {
 
   final Color color;
 
-  StopwatchIcon({
-    @required this.size,
-    @required this.millis,
-    @required this.color,
+  const StopwatchIcon({super.key, 
+    required this.size,
+    required this.millis,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
       child: CustomPaint(
@@ -46,7 +46,7 @@ class _StopwatchPainter extends CustomPainter {
     canvas.drawCircle(center, radius, stopwatchPaint);
     canvas.translate(center.dx, center.dy);
 
-    final o = Offset(0, 0);
+    const o = Offset(0, 0);
 
     // Minutes
     canvas.save();

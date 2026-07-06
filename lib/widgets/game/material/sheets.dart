@@ -1,24 +1,20 @@
 import 'dart:math';
 
-import 'package:classic_15_puzzle/config/ui.dart';
 import 'package:classic_15_puzzle/data/board.dart';
 import 'package:classic_15_puzzle/widgets/game/board.dart';
 import 'package:classic_15_puzzle/widgets/game/material/page.dart';
 import 'package:flutter/material.dart' hide AboutDialog;
-import 'package:flutter/widgets.dart';
 
 Widget createMoreBottomSheet(
   BuildContext context, {
-  @required Function(int) call,
+  required void Function(int) call,
 }) {
-  final config = ConfigUiContainer.of(context);
-
-  Widget createBoard({int size}) => Center(
+  Widget createBoard({required int size}) => Center(
         child: Column(
           children: <Widget>[
             Container(
-              margin: EdgeInsets.all(8.0),
-              padding: EdgeInsets.all(4.0),
+              margin: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(4.0),
               decoration: BoxDecoration(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? Colors.black54
@@ -70,11 +66,11 @@ Widget createMoreBottomSheet(
 
   final items = <Widget>[
     Container(
-        margin: EdgeInsets.fromLTRB(20, 20, 20, 16),
-        child: Text("Choose game mode")),
+        margin: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        child: const Text("Choose game mode")),
     Row(
       children: <Widget>[
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Expanded(
           child: Align(
             alignment: Alignment.centerLeft,
@@ -88,10 +84,10 @@ Widget createMoreBottomSheet(
             child: createBoard(size: 5),
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
       ],
     ),
-    SizedBox(height: 40),
+    const SizedBox(height: 40),
   ];
 
   return SingleChildScrollView(
@@ -105,7 +101,7 @@ Widget createMoreBottomSheet(
 
         return Column(
           children: [
-            Container(
+            SizedBox(
               width: width,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

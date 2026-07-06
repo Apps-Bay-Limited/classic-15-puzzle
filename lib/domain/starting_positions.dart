@@ -1,9 +1,9 @@
-const STARTING_POSITIONS_3X3 = [
+const startingPositions3x3 = [
   [8, 6, 7, 2, 5, 4, 3, 0, 1],
   [6, 4, 7, 8, 5, 0, 3, 2, 1]
 ];
 
-const STARTING_POSITIONS_4X4 = [
+const startingPositions4x4 = [
   // RALPH UDO GASSER
   // Harnessing Computational Resources for Efficient Exhaustive Search
   // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.39.6069&rep=rep1&type=pdf
@@ -19,7 +19,7 @@ const STARTING_POSITIONS_4X4 = [
 ];
 
 // @formatter:off
-const STARTING_POSITIONS_5X5 = [
+const startingPositions5x5 = [
   // Few variants of 5x5 puzzle with a large manhattan
   // distance.
   [9, 14, 22, 11, 16, 7, 0, 21, 17, 23, 15, 4, 2, 18, 24, 1, 20, 12, 3, 6, 19, 13, 5, 10, 8],

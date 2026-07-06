@@ -4,102 +4,58 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-import '../../secrets.dart';
+import '../../config/ad_config.dart';
 
 class AdsManager {
   static bool disableAllAdsForScreenshot = false;
-  static String bannerAdUnitIdIOS = Secrets.bannerAdUnitIdAndroid;
-  static String openAdUnitIDIOS = Secrets.openAdUnitIDIOS;
+  static String? _bannerAdUnitId;
+  static String? _openAdUnitID;
 
-  static String bannerAdUnitIdAndroid = Secrets.bannerAdUnitIdAndroid;
-  static String openAdUnitIDAndroid = Secrets.openAdUnitIDAndroid;
+  static Future<void> initialize() async {
+    _bannerAdUnitId = await AdConfig.bannerAdUnitId;
+    _openAdUnitID = await AdConfig.openAdUnitId;
+    debugPrint("AdsManager initialized: banner=$_bannerAdUnitId, open=$_openAdUnitID");
+  }
 
   static String get bannerAdUnitId {
-    if (Platform.isAndroid) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return "ca-app-pub-3940256099942544/6300978111";
-        }
-      } else {
-        // android banner ID
-        return bannerAdUnitIdAndroid;
-      }
-    } else if (Platform.isIOS) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return "ca-app-pub-3940256099942544/2934735716";
-        }
-      } else {
-        // ios banner ID
-        return bannerAdUnitIdIOS;
-      }
-    } else {
-      throw new UnsupportedError("Unsupported platform");
-    }
+    if (disableAllAdsForScreenshot) return "";
+    return _bannerAdUnitId ?? "";
   }
 
   static String get openAdUnitID {
-    if (Platform.isAndroid) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return 'ca-app-pub-3940256099942544/3419835294';
-        }
-      } else {
-        // android openAd ID
-        return openAdUnitIDAndroid;
-      }
-    } else if (Platform.isIOS) {
-      if (kDebugMode) {
-        if (disableAllAdsForScreenshot) {
-          return "";
-        } else {
-          return 'ca-app-pub-3940256099942544/5662855259';
-        }
-      } else {
-        // ios openAd ID
-        return openAdUnitIDIOS;
-      }
-    } else {
-      throw new UnsupportedError("Unsupported platform");
-    }
+    if (disableAllAdsForScreenshot) return "";
+    return _openAdUnitID ?? "";
   }
 
   static void debugPrintID() {
-    print("bannerAdUnitId: ${AdsManager.bannerAdUnitId}");
-    // print("openAdUnitID: ${AdsManager.openAdUnitID}");
+    debugPrint("bannerAdUnitId: ${AdsManager.bannerAdUnitId}");
+    debugPrint("openAdUnitID: ${AdsManager.openAdUnitID}");
   }
 }
 
 class AppOpenAdManager {
-  AppOpenAd _appOpenAd;
+  AppOpenAd? _appOpenAd;
   bool _isShowingAd = false;
 
   /// Maximum duration allowed between loading and showing the ad.
-  final Duration maxCacheDuration = Duration(hours: 4);
+  static const Duration maxCacheDuration = Duration(hours: 4);
 
   /// Keep track of load time so we don't show an expired ad.
-  DateTime _appOpenLoadTime;
+  DateTime? _appOpenLoadTime;
 
   /// Load an AppOpenAd.
   void loadAd() {
     AppOpenAd.load(
       adUnitId: AdsManager.openAdUnitID,
-      orientation: AppOpenAd.orientationPortrait,
-      request: AdRequest(),
+      request: const AdRequest(),
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
-          print('$ad loaded');
+          debugPrint('$ad loaded');
           _appOpenLoadTime = DateTime.now();
           _appOpenAd = ad;
         },
         onAdFailedToLoad: (error) {
-          print('AppOpenAd failed to load: $error');
+          debugPrint('AppOpenAd failed to load: $error');
           // Handle the error.
         },
       ),
@@ -113,43 +69,43 @@ class AppOpenAdManager {
 
   void showAdIfAvailable() {
     if (!isAdAvailable) {
-      print('Tried to show ad before available.');
+      debugPrint('Tried to show ad before available.');
       loadAd();
       return;
     }
     if (_isShowingAd) {
-      print('Tried to show ad while already showing an ad.');
+      debugPrint('Tried to show ad while already showing an ad.');
       return;
     }
-    if (DateTime.now().subtract(maxCacheDuration).isAfter(_appOpenLoadTime)) {
-      print('Maximum cache duration exceeded. Loading another ad.');
-      _appOpenAd.dispose();
+    if (_appOpenLoadTime != null && DateTime.now().subtract(maxCacheDuration).isAfter(_appOpenLoadTime!)) {
+      debugPrint('Maximum cache duration exceeded. Loading another ad.');
+      _appOpenAd?.dispose();
       _appOpenAd = null;
       loadAd();
       return;
     }
 
     // Set the fullScreenContentCallback and show the ad.
-    _appOpenAd.fullScreenContentCallback = FullScreenContentCallback(
+    _appOpenAd?.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _isShowingAd = true;
-        print('$ad onAdShowedFullScreenContent');
+        debugPrint('$ad onAdShowedFullScreenContent');
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        print('$ad onAdFailedToShowFullScreenContent: $error');
+        debugPrint('$ad onAdFailedToShowFullScreenContent: $error');
         _isShowingAd = false;
         ad.dispose();
         _appOpenAd = null;
       },
       onAdDismissedFullScreenContent: (ad) {
-        print('$ad onAdDismissedFullScreenContent');
+        debugPrint('$ad onAdDismissedFullScreenContent');
         _isShowingAd = false;
         ad.dispose();
         _appOpenAd = null;
         loadAd();
       },
     );
-    _appOpenAd.show();
+    _appOpenAd?.show();
   }
 }
 
@@ -159,13 +115,13 @@ class AppLifecycleReactor extends WidgetsBindingObserver {
 
   bool hasEnterBackground = false;
 
-  AppLifecycleReactor({this.appOpenAdManager});
+  AppLifecycleReactor({required this.appOpenAdManager});
 
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
     // Try to show an app open ad if the app is being resumed and
     // we're not already showing an app open ad.
-    print("didChangeAppLifecycleState: $state");
+    // print("didChangeAppLifecycleState: $state");
     if (state == AppLifecycleState.paused) {
       hasEnterBackground = true;
     }

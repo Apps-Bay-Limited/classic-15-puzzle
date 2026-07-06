@@ -4,7 +4,6 @@ import 'package:classic_15_puzzle/widgets/auto_size_text.dart';
 import 'package:classic_15_puzzle/widgets/game/format.dart';
 import 'package:classic_15_puzzle/widgets/icons/stopwatch.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 /// Widget shows the current time of
 /// a game.
@@ -15,22 +14,22 @@ class GameStopwatchWidget extends StatefulWidget {
 
   final double fontSize;
 
-  GameStopwatchWidget({
-    @required this.time,
-    @required this.fontSize,
-    this.timeFormatter: formatElapsedTime,
+  const GameStopwatchWidget({super.key, 
+    required this.time,
+    required this.fontSize,
+    this.timeFormatter = formatElapsedTime,
   });
 
   @override
-  _GameStopwatchWidgetState createState() => _GameStopwatchWidgetState();
+  GameStopwatchWidgetState createState() => GameStopwatchWidgetState();
 }
 
-class _GameStopwatchWidgetState extends State<GameStopwatchWidget>
+class GameStopwatchWidgetState extends State<GameStopwatchWidget>
     with SingleTickerProviderStateMixin {
-  AnimationController controller;
-  Animation<double> animation;
+  late AnimationController controller;
+  late Animation<double> animation;
 
-  Timer timer;
+  Timer? timer;
 
   @override
   void initState() {
@@ -92,7 +91,7 @@ class _GameStopwatchWidgetState extends State<GameStopwatchWidget>
       animation: animation,
       builder: (context, child) {
         return Transform.scale(
-          alignment: Alignment(0.0, 0.75),
+          alignment: const Alignment(0.0, 0.75),
           scale: 0.8 + 0.2 * animation.value,
           child: child,
         );
@@ -107,9 +106,9 @@ class _GameStopwatchWidgetState extends State<GameStopwatchWidget>
               timeStrAtStartOfMinute,
               timeStr,
               maxLines: 1,
-              style: Theme.of(context).textTheme.headline5.copyWith(
+              style: (Theme.of(context).textTheme.headlineSmall ?? const TextStyle()).copyWith(
                     fontSize: widget.fontSize,
-                    color: Theme.of(context).textTheme.headline6.color,
+                    color: Theme.of(context).textTheme.titleLarge?.color,
                   ),
             ),
           ),
@@ -117,7 +116,7 @@ class _GameStopwatchWidgetState extends State<GameStopwatchWidget>
           StopwatchIcon(
             size: 24,
             millis: time,
-            color: Theme.of(context).iconTheme.color,
+            color: Theme.of(context).iconTheme.color ?? Colors.black,
           ),
         ],
       ),

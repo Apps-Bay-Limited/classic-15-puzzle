@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:classic_15_puzzle/data/board.dart';
 import 'package:classic_15_puzzle/data/chip.dart';
 import 'package:classic_15_puzzle/domain/starting_positions.dart';
-import 'package:meta/meta.dart';
 
 abstract class Game {
   static Game instance = _GameImpl();
@@ -14,14 +13,14 @@ abstract class Game {
   /// a given amount of times.
   Board shuffle(Board board, {int amount = 300});
 
-  Board tap(Board board, {@required Point<int> point});
+  Board tap(Board board, {required Point<int> point});
 
   Point<int> findChipPositionAfterTap(Board board,
-      {@required Point<int> point});
+      {required Point<int> point});
 
   /// Returns the chips that are free to move,
   /// including a chip at the point.
-  Iterable<Chip> findChips(Board board, {@required Point<int> point});
+  Iterable<Chip> findChips(Board board, {required Point<int> point});
 }
 
 class _GameImpl implements Game {
@@ -32,17 +31,17 @@ class _GameImpl implements Game {
     switch (board.size) {
       case 3:
         {
-          variants = STARTING_POSITIONS_3X3;
+          variants = startingPositions3x3;
           break;
         }
       case 4:
         {
-          variants = STARTING_POSITIONS_4X4;
+          variants = startingPositions4x4;
           break;
         }
       case 5:
         {
-          variants = STARTING_POSITIONS_5X5;
+          variants = startingPositions5x5;
           break;
         }
       default:
@@ -77,16 +76,16 @@ class _GameImpl implements Game {
   Board shuffle(Board board, {int amount = 300}) {
     final random = Random();
 
-    List<List<Chip>> matrix = List.generate(board.size, (i) {
+    List<List<Chip?>> matrix = List.generate(board.size, (i) {
       return List.generate(board.size, (j) {
         return null;
       });
     });
 
-    board.chips.forEach((chip) {
+    for (var chip in board.chips) {
       final pos = chip.currentPoint;
       matrix[pos.x][pos.y] = chip;
-    });
+    }
 
     // Perform the shuffling
     var blankX = board.blank.x;
@@ -109,7 +108,6 @@ class _GameImpl implements Game {
           break;
         default:
           throw StateError("You have choosen an uknown direction.");
-          break;
       }
 
       if (x < 0 || x >= board.size || y < 0 || y >= board.size) {
@@ -140,7 +138,7 @@ class _GameImpl implements Game {
   }
 
   @override
-  Board tap(Board board, {Point<int> point}) {
+  Board tap(Board board, {required Point<int> point}) {
     final p = findChipPositionAfterTap(board, point: point);
     if (p == point) {
       return board;
@@ -159,7 +157,7 @@ class _GameImpl implements Game {
   }
 
   @override
-  Point<int> findChipPositionAfterTap(Board board, {Point<int> point}) {
+  Point<int> findChipPositionAfterTap(Board board, {required Point<int> point}) {
     int dx;
     int dy;
     if (point.x == board.blank.x) {
@@ -176,7 +174,7 @@ class _GameImpl implements Game {
   }
 
   @override
-  Iterable<Chip> findChips(Board board, {Point<int> point}) {
+  Iterable<Chip> findChips(Board board, {required Point<int> point}) {
     if (point.x == board.blank.x) {
       int start;
       int end;
@@ -210,7 +208,7 @@ class _GameImpl implements Game {
         return y == board.blank.y && x >= start && x <= end;
       });
     } else {
-      return Iterable.empty();
+      return const Iterable.empty();
     }
   }
 }

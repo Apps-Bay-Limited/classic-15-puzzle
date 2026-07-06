@@ -10,18 +10,21 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GamePresenterWidget extends StatefulWidget {
-  static const SUPPORTED_SIZES = [3, 4, 5];
+  static const supportedSizes = [3, 4, 5];
 
   final Widget child;
 
-  final Function(Result) onSolve;
+  final void Function(Result)? onSolve;
 
-  GamePresenterWidget({@required this.child, this.onSolve});
+  const GamePresenterWidget({super.key, required this.child, this.onSolve});
 
   static GamePresenterWidgetState of(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_InheritedStateContainer>()
-        .data;
+    final result = context
+        .dependOnInheritedWidgetOfExactType<_InheritedStateContainer>();
+    if (result == null) {
+      throw StateError("GamePresenterWidget.of() called with a context that does not contain a GamePresenterWidget.");
+    }
+    return result.data;
   }
 
   @override
@@ -30,33 +33,31 @@ class GamePresenterWidget extends StatefulWidget {
 
 class GamePresenterWidgetState extends State<GamePresenterWidget>
     with WidgetsBindingObserver {
-  static const TIME_STOPPED = 0;
+  static const timeStopped = 0;
 
-  static final _SALSA_KEY = encrypt.Key.fromUtf8('Ro9ndPUceXQQL8GS');
-  static final _SALSA_IV = encrypt.IV.fromUtf8('84bgee3v');
+  static final _salsaKey = encrypt.Key.fromUtf8('Ro9ndPUceXQQL8GS');
+  static final _salsaIv = encrypt.IV.fromUtf8('84bgee3v');
 
-  static const _KEY_STATE = 'state';
+  static const _keyState = 'state';
 
   /// Encrypter to protected saved states of the game and
   /// make hacking a lil bit harder.
-  final _encrypter = encrypt.Encrypter(encrypt.Salsa20(_SALSA_KEY));
+  final _encrypter = encrypt.Encrypter(encrypt.Salsa20(_salsaKey));
 
   final Game game = Game.instance;
 
-  Board board;
+  late Board board;
 
-  int steps;
+  int steps = 0;
 
-  int time;
+  int time = timeStopped;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    board = null;
-    steps = null;
-    time = TIME_STOPPED;
+    board = _createBoard(4);
 
     _loadState();
   }
@@ -67,18 +68,18 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       final prefs = await SharedPreferences.getInstance();
 
       final encrypted =
-          encrypt.Encrypted.fromBase64(prefs.getString(_KEY_STATE) ?? '');
-      final plainText = _encrypter.decrypt(encrypted, iv: _SALSA_IV);
+          encrypt.Encrypted.fromBase64(prefs.getString(_keyState) ?? '');
+      final plainText = _encrypter.decrypt(encrypted, iv: _salsaIv);
 
       jsonMap = json.decode(plainText);
-    } catch (FormatException) {
-      jsonMap = Map<String, dynamic>();
+    } catch (e) {
+      jsonMap = <String, dynamic>{};
     }
 
-    int elapsedTime;
-    int time;
-    int steps;
-    Board board;
+    int? elapsedTime;
+    int? time;
+    int? steps;
+    Board? board;
 
     try {
       final deserializer = MapSerializeInput(map: jsonMap);
@@ -87,20 +88,20 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       time = deserializer.readInt();
       steps = deserializer.readInt();
       board = deserializer.readDeserializable(boardFactory);
-    } catch (Exception) {}
+    } catch (e) {
+      // Ignored
+    }
 
     final now = DateTime.now().millisecondsSinceEpoch;
     if ( // validate time
         time == null ||
             time < 0 ||
             time > now ||
-            time > 0 && elapsedTime > now - time ||
-            // validate steps
+            (time > 0 && elapsedTime != null && elapsedTime > now - time) ||
             steps == null ||
             steps < 0 ||
-            // validate board
             board == null) {
-      time = TIME_STOPPED;
+      time = timeStopped;
       steps = 0;
       // Initialize empty board with a classic
       // pattern.
@@ -109,9 +110,9 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     }
 
     setState(() {
-      this.time = time;
-      this.steps = steps;
-      this.board = board;
+      this.time = time ?? timeStopped;
+      this.steps = steps ?? 0;
+      this.board = board ?? _createBoard(4);
     });
   }
 
@@ -126,7 +127,6 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   }
 
   void play() {
-    assert(board != null);
 
     final now = DateTime.now().millisecondsSinceEpoch;
     setState(() {
@@ -139,24 +139,22 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
   void stop() {
     setState(() {
-      time = TIME_STOPPED;
+      time = timeStopped;
       steps = 0;
     });
   }
 
-  bool isPlaying() => time != TIME_STOPPED;
+  bool isPlaying() => time != timeStopped;
 
   void resize(int size) {
     setState(() {
-      time = TIME_STOPPED;
+      time = timeStopped;
       steps = 0;
       board = _createBoard(size);
     });
   }
 
-  void tap({@required Point<int> point}) {
-    assert(board != null);
-    assert(point != null);
+  void tap({required Point<int> point}) {
 
     setState(() {
       board = game.tap(board, point: point);
@@ -192,10 +190,10 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
         final now = DateTime.now().millisecondsSinceEpoch;
         timeFuture = now;
       } else {
-        timeFuture = TIME_STOPPED;
+        timeFuture = timeStopped;
       }
 
-      var boardFuture;
+      Board boardFuture;
       if (isPlaying()) {
         boardFuture =
             game.shuffle(game.hardest(board), amount: board.size * board.size);
@@ -217,7 +215,9 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       case AppLifecycleState.detached:
         try {
           _saveState();
-        } on Exception {}
+        } on Exception {
+          // Ignored
+        }
         break;
       default:
         break;
@@ -227,13 +227,6 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   void _saveState() async {
     final prefs = await SharedPreferences.getInstance();
     final serializer = MapSerializeOutput();
-
-    if (board == null) {
-      // Clear the current state, loading this will recreate
-      // the board.
-      prefs.setString(_KEY_STATE, null);
-      return;
-    }
 
     // Write the delta of time, so user can not close the app, change
     // time and go back so easily.
@@ -246,13 +239,13 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     serializer.writeSerializable(board);
 
     final plainText = serializer.toJsonString();
-    final encryptedText = _encrypter.encrypt(plainText, iv: _SALSA_IV).base64;
-    prefs.setString(_KEY_STATE, encryptedText);
+    final encryptedText = _encrypter.encrypt(plainText, iv: _salsaIv).base64;
+    prefs.setString(_keyState, encryptedText);
   }
 
   @override
   Widget build(BuildContext context) {
-    return new _InheritedStateContainer(
+    return _InheritedStateContainer(
       data: this,
       child: widget.child,
     );
@@ -268,11 +261,10 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 class _InheritedStateContainer extends InheritedWidget {
   final GamePresenterWidgetState data;
 
-  _InheritedStateContainer({
-    Key key,
-    @required this.data,
-    @required Widget child,
-  }) : super(key: key, child: child);
+  const _InheritedStateContainer({
+    required this.data,
+    required super.child,
+  });
 
   @override
   bool updateShouldNotify(_InheritedStateContainer old) => true;

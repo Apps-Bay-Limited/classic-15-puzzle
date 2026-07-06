@@ -1,7 +1,9 @@
 bool platformCheck(bool Function() block) {
   try {
     return block();
-  } catch (e) {}
+  } catch (e) {
+    // Ignored
+  }
   return false;
 }
 

@@ -7,22 +7,22 @@ import 'package:classic_15_puzzle/utils/platform.dart';
 import 'package:classic_15_puzzle/widgets/game/page.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/in_app_reviewer_helper.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-void main() {
+void main() async {
   _setTargetPlatformForDesktop();
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  await AdsManager.initialize();
+  MobileAds.instance.initialize();
+
   Future.delayed(const Duration(seconds: 1), () {
     AppTrackingTransparency.requestTrackingAuthorization();
   });
-
-  MobileAds.instance.initialize();
 
   AdsManager.debugPrintID();
 
@@ -30,7 +30,7 @@ void main() {
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_) {
     runApp(
-      PlayGamesContainer(
+      const PlayGamesContainer(
         child: ConfigUiContainer(
           child: MyApp(),
         ),
@@ -43,7 +43,7 @@ void main() {
 /// a supported platform (iOS for macOS, Android for Linux and Windows).
 /// Otherwise, do nothing.
 void _setTargetPlatformForDesktop() {
-  TargetPlatform targetPlatform;
+  TargetPlatform? targetPlatform;
   if (platformCheck(() => Platform.isMacOS)) {
     targetPlatform = TargetPlatform.iOS;
   } else if (platformCheck(() => Platform.isLinux || Platform.isWindows)) {
@@ -55,10 +55,12 @@ void _setTargetPlatformForDesktop() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final title = 'Classic 15 Puzzle';
-    return _MyMaterialApp(title: title);
+    const title = 'Classic 15 Puzzle';
+    return const _MyMaterialApp(title: title);
   }
 }
 
@@ -67,11 +69,11 @@ class MyApp extends StatelessWidget {
 abstract class _MyPlatformApp extends StatelessWidget {
   final String title;
 
-  _MyPlatformApp({@required this.title});
+  const _MyPlatformApp({required this.title});
 }
 
 class _MyMaterialApp extends _MyPlatformApp {
-  _MyMaterialApp({@required String title}) : super(title: title);
+  const _MyMaterialApp({required super.title});
 
   @override
   Widget build(BuildContext context) {
@@ -79,33 +81,27 @@ class _MyMaterialApp extends _MyPlatformApp {
 
     ThemeData applyDecor(ThemeData theme) => theme.copyWith(
           primaryColor: Colors.blue,
-          accentColor: Colors.amberAccent,
-          accentIconTheme: theme.iconTheme.copyWith(color: Colors.black),
-          dialogTheme: const DialogTheme(
+          dialogTheme: const DialogThemeData(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(16.0)),
             ),
           ),
           textTheme: theme.textTheme.apply(fontFamily: 'ManRope'),
           primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'ManRope'),
-          accentTextTheme: theme.accentTextTheme.apply(fontFamily: 'ManRope'),
+          colorScheme: theme.colorScheme.copyWith(secondary: Colors.amberAccent),
         );
 
     final baseDarkTheme = applyDecor(ThemeData(
       brightness: Brightness.dark,
-      canvasColor: Color(0xFF121212),
-      backgroundColor: Color(0xFF121212),
-      cardColor: Color(0xFF1E1E1E),
+      canvasColor: const Color(0xFF121212),
+      cardColor: const Color(0xFF1E1E1E),
+      colorScheme: const ColorScheme.dark().copyWith(surface: const Color(0xFF121212)),
     ));
     final baseLightTheme = applyDecor(ThemeData.light());
 
     ThemeData darkTheme;
     ThemeData lightTheme;
-    if (ui.useDarkTheme == null) {
-      // auto
-      darkTheme = baseDarkTheme;
-      lightTheme = baseLightTheme;
-    } else if (ui.useDarkTheme == true) {
+    if (ui?.useDarkTheme == true) {
       // dark
       darkTheme = baseDarkTheme;
       lightTheme = baseDarkTheme;
@@ -123,32 +119,17 @@ class _MyMaterialApp extends _MyPlatformApp {
       home: Builder(
         builder: (context) {
           bool useDarkTheme;
-          if (ui.useDarkTheme == null) {
-            var platformBrightness = MediaQuery.of(context).platformBrightness;
-            useDarkTheme = platformBrightness == Brightness.dark;
-          } else {
-            useDarkTheme = ui.useDarkTheme;
-          }
+          useDarkTheme = ui?.useDarkTheme ?? false;
           final overlay = useDarkTheme ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark;
           SystemChrome.setSystemUIOverlayStyle(
             overlay.copyWith(
               statusBarColor: Colors.transparent,
             ),
           );
-          return GamePage();
+          return const GamePage();
         },
       ),
     );
   }
 }
 
-class _MyCupertinoApp extends _MyPlatformApp {
-  _MyCupertinoApp({@required String title}) : super(title: title);
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoApp(
-      title: title,
-    );
-  }
-}

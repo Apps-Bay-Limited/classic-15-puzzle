@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:meta/meta.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class Serializable {
@@ -29,16 +28,16 @@ abstract class SerializeInput {
   T readDeserializable<T>(DeserializableHelper<T> helper);
 }
 
-const _DIVIDER = "_";
+const _divider = "_";
 
 class SharedPrefSerializeOutput extends SerializeOutput {
   final String key;
 
-  final SharedPreferences prefs;
+  final SharedPreferences? prefs;
 
   int counter = 0;
 
-  SharedPrefSerializeOutput({@required this.key, this.prefs});
+  SharedPrefSerializeOutput({required this.key, this.prefs});
 
   @override
   void writeInt(int value) {
@@ -58,7 +57,7 @@ class SharedPrefSerializeOutput extends SerializeOutput {
   void writeSerializable(Serializable value) {
     write((prefs, key) {
       final worker = SharedPrefSerializeOutput(
-        key: key + _DIVIDER,
+        key: key + _divider,
         prefs: prefs,
       );
 
@@ -70,42 +69,49 @@ class SharedPrefSerializeOutput extends SerializeOutput {
     final key = this.key + counter.toString();
     counter++;
 
-    block(prefs, key);
+    final prefs = this.prefs;
+    if (prefs != null) {
+      block(prefs, key);
+    }
   }
 }
 
 class SharedPrefSerializeInput extends SerializeInput {
   final String key;
 
-  final SharedPreferences prefs;
+  final SharedPreferences? prefs;
 
   int counter = 0;
 
-  SharedPrefSerializeInput({@required this.key, this.prefs});
+  SharedPrefSerializeInput({required this.key, this.prefs});
 
   @override
-  int readInt() => read((prefs, key) => prefs.getInt(key));
+  int readInt() => read((prefs, key) => prefs.getInt(key)) ?? 0;
 
   @override
-  String readString() => read((prefs, key) => prefs.getString(key));
+  String readString() => read((prefs, key) => prefs.getString(key)) ?? "";
 
   @override
   T readDeserializable<T>(DeserializableHelper<T> helper) {
     return read((prefs, key) {
       final worker = SharedPrefSerializeInput(
-        key: key + _DIVIDER,
+        key: key + _divider,
         prefs: prefs,
       );
 
       return helper.deserialize(worker);
-    });
+    })!;
   }
 
-  T read<T>(T Function(SharedPreferences, String) block) {
+  T? read<T>(T? Function(SharedPreferences, String) block) {
     final key = this.key + counter.toString();
     counter++;
 
-    return block(prefs, key);
+    final prefs = this.prefs;
+    if (prefs != null) {
+      return block(prefs, key);
+    }
+    return null;
   }
 }
 
@@ -116,7 +122,7 @@ class MapSerializeOutput extends SerializeOutput {
 
   int counter = 0;
 
-  MapSerializeOutput({this.key = "", map}) : this.map = map ?? Map();
+  MapSerializeOutput({this.key = "", Map<String, dynamic>? map}) : map = map ?? <String, dynamic>{};
 
   @override
   void writeInt(int value) {
@@ -136,7 +142,7 @@ class MapSerializeOutput extends SerializeOutput {
   void writeSerializable(Serializable value) {
     write((key) {
       final worker = MapSerializeOutput(
-        key: key + _DIVIDER,
+        key: key + _divider,
         map: map,
       );
 
@@ -161,7 +167,7 @@ class MapSerializeInput extends SerializeInput {
 
   int counter = 0;
 
-  MapSerializeInput({this.key = "", @required this.map});
+  MapSerializeInput({this.key = "", required this.map});
 
   @override
   int readInt() => read((key) => map[key]);
@@ -173,7 +179,7 @@ class MapSerializeInput extends SerializeInput {
   T readDeserializable<T>(DeserializableHelper<T> helper) {
     return read((key) {
       final worker = MapSerializeInput(
-        key: key + _DIVIDER,
+        key: key + _divider,
         map: map,
       );
 

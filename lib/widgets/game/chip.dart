@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart' hide Chip;
 
 class ChipWidget extends StatelessWidget {
-  final String text;
+  final String? text;
 
-  final Function onPressed;
+  final VoidCallback? onPressed;
 
   final Color overlayColor;
 
@@ -15,14 +15,14 @@ class ChipWidget extends StatelessWidget {
 
   final double size;
 
-  ChipWidget(
+  const ChipWidget(
     this.text,
     this.overlayColor,
     this.backgroundColor,
     this.fontColor,
-    this.fontSize, {
-    @required this.onPressed,
-    @required this.size,
+    this.fontSize, {super.key, 
+    this.onPressed,
+    required this.size,
   });
 
   @override
@@ -48,17 +48,15 @@ class ChipWidget extends StatelessWidget {
           child: InkWell(
             onTap: onPressed,
             customBorder: shape,
-            child: text != null
-                ? Center(
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: fontSize,
-                          color: fontColor),
-                    ),
-                  )
-                : null,
+            child: Center(
+              child: Text(
+                text ?? "",
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: fontSize,
+                    color: fontColor),
+              ),
+            ),
           ),
         ),
       ),

@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:classic_15_puzzle/utils/serializable.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 
 import 'point.dart';
 
@@ -36,7 +36,7 @@ class ChipDeserializableFactory extends DeserializableHelper<Chip> {
 
   @override
   Chip deserialize(SerializeInput input) {
-    final pd = PointDeserializableFactory();
+    const pd = PointDeserializableFactory();
 
     final number = input.readInt();
     final targetPoint = input.readDeserializable(pd);

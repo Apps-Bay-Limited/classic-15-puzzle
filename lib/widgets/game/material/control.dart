@@ -1,28 +1,27 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 /// Widget that can start / stop
 /// a game.
 class GamePlayStopButton extends StatefulWidget {
   final bool isPlaying;
 
-  final Function() onTap;
+  final void Function()? onTap;
 
-  GamePlayStopButton({
-    @required this.isPlaying,
+  const GamePlayStopButton({super.key, 
+    required this.isPlaying,
     this.onTap,
   });
 
   @override
-  _GamePlayStopButtonState createState() => _GamePlayStopButtonState();
+  GamePlayStopButtonState createState() => GamePlayStopButtonState();
 }
 
-class _GamePlayStopButtonState extends State<GamePlayStopButton>
+class GamePlayStopButtonState extends State<GamePlayStopButton>
     with TickerProviderStateMixin {
-  AnimationController controller;
-  Animation<double> animation;
+  late AnimationController controller;
+  late Animation<double> animation;
 
   @override
   void initState() {
@@ -69,8 +68,8 @@ class _GamePlayStopButtonState extends State<GamePlayStopButton>
     final animRatioStop = _range(animation.value, begin: 0.0, end: 1.0);
 
     // Calculate the background color of the FAB.
-    final backgroundColorAccent = theme.accentColor.withOpacity(animRatioPlay);
-    final backgroundColorCard = theme.cardColor.withOpacity(animRatioStop);
+    final backgroundColorAccent = theme.colorScheme.secondary.withValues(alpha: animRatioPlay);
+    final backgroundColorCard = theme.cardColor.withValues(alpha: animRatioStop);
     final backgroundColor =
         Color.alphaBlend(backgroundColorAccent, backgroundColorCard);
 
@@ -86,7 +85,7 @@ class _GamePlayStopButtonState extends State<GamePlayStopButton>
               angle: animation.value * pi / 2.0,
               child: Icon(
                 Icons.play_arrow,
-                color: theme.accentIconTheme.color,
+                color: theme.iconTheme.color,
               ),
             ),
           ),
@@ -105,7 +104,7 @@ class _GamePlayStopButtonState extends State<GamePlayStopButton>
     );
   }
 
-  double _range(double v, {@required double begin, @required double end}) =>
+  double _range(double v, {required double begin, required double end}) =>
       max(min(v, end), begin);
 
   @override

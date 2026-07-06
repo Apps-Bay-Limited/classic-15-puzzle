@@ -3,11 +3,11 @@ import 'package:classic_15_puzzle/play_games.dart';
 import 'package:classic_15_puzzle/widgets/game/material/page.dart';
 import 'package:classic_15_puzzle/widgets/game/material/victory.dart';
 import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class GamePage extends StatelessWidget {
+  const GamePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final rootWidget = _buildRoot(context);
@@ -21,7 +21,7 @@ class GamePage extends StatelessWidget {
   }
 
   Widget _buildRoot(BuildContext context) {
-    return GameMaterialPage();
+    return const GameMaterialPage();
   }
 
   void _showVictoryDialog(BuildContext context, Result result) {
@@ -33,7 +33,7 @@ class GamePage extends StatelessWidget {
 
   void _submitResult(BuildContext context, Result result) {
     final playGames = PlayGamesContainer.of(context);
-    playGames.submitScore(
+    playGames?.submitScore(
       key: PlayGames.getLeaderboardOfSize(result.size),
       time: result.time,
     );

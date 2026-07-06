@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:classic_15_puzzle/data/point.dart';
 import 'package:classic_15_puzzle/utils/serializable.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 
 import 'chip.dart';
 
@@ -56,25 +56,16 @@ class BoardDeserializableFactory extends DeserializableHelper<Board> {
   @override
   Board deserialize(SerializeInput input) {
     final size = input.readInt();
-    if (size == null) {
-      return null;
-    }
 
     const pointFactory = PointDeserializableFactory();
     const chipFactory = ChipDeserializableFactory();
 
     final blank = input.readDeserializable(pointFactory);
-    if (blank == null) {
-      return null;
-    }
 
-    final chips = List<Chip>();
+    final chips = <Chip>[];
     final length = size * size - 1;
     for (var i = 0; i < length; i++) {
       final chip = input.readDeserializable(chipFactory);
-      if (chip == null) {
-        return null;
-      }
 
       chips.add(chip);
     }

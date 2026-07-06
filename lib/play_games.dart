@@ -3,47 +3,46 @@ import 'dart:io';
 import 'package:classic_15_puzzle/utils/platform.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:meta/meta.dart';
 
-const _LEADERBOARD_3x3 = 'CgkI25T8-IoFEAIQBQ';
-const _LEADERBOARD_4x4 = 'CgkI25T8-IoFEAIQBg';
-const _LEADERBOARD_5x5 = 'CgkI25T8-IoFEAIQBw';
+const _leaderboard3x3 = 'CgkI25T8-IoFEAIQBQ';
+const _leaderboard4x4 = 'CgkI25T8-IoFEAIQBg';
+const _leaderboard5x5 = 'CgkI25T8-IoFEAIQBw';
 
 class PlayGames {
   /// Returns the key to a leaderboard
   /// of a puzzle
   static String getLeaderboardOfSize(int size) {
-    String id;
+    String? id;
     if (size == 3) {
-      id = _LEADERBOARD_3x3;
+      id = _leaderboard3x3;
     } else if (size == 4) {
-      id = _LEADERBOARD_4x4;
+      id = _leaderboard4x4;
     } else if (size == 5) {
-      id = _LEADERBOARD_5x5;
+      id = _leaderboard5x5;
     }
 
-    return id;
+    return id ?? "";
   }
 }
 
 class PlayGamesContainer extends StatefulWidget {
   final Widget child;
 
-  PlayGamesContainer({@required this.child});
+  const PlayGamesContainer({super.key, required this.child});
 
-  static _PlayGamesContainerState of(BuildContext context) {
+  static PlayGamesContainerState? of(BuildContext context) {
     return context
         .dependOnInheritedWidgetOfExactType<_InheritedStateContainer>()
-        .data;
+        ?.data;
   }
 
   @override
-  _PlayGamesContainerState createState() => _PlayGamesContainerState();
+  PlayGamesContainerState createState() => PlayGamesContainerState();
 }
 
-class _PlayGamesContainerState extends State<PlayGamesContainer> {
+class PlayGamesContainerState extends State<PlayGamesContainer> {
   static const playGames =
-      const MethodChannel('com.artemchep.flutter/google_play_games');
+      MethodChannel('com.artemchep.flutter/google_play_games');
 
   bool isSupported = false;
 
@@ -56,7 +55,11 @@ class _PlayGamesContainerState extends State<PlayGamesContainer> {
         if (_isSupportedInternal()) {
           try {
             return await playGames.invokeMethod("isSupported");
-          } on PlatformException {}
+          } on MissingPluginException {
+            debugPrint("Play Games plugin not found.");
+          } on PlatformException {
+            // Ignored
+          }
         }
         return false;
       }();
@@ -67,7 +70,7 @@ class _PlayGamesContainerState extends State<PlayGamesContainer> {
     }();
   }
 
-  void submitScore({@required String key, @required int time}) async {
+  void submitScore({required String key, required int time}) async {
     if (_isSupportedInternal()) {
       try {
         await playGames.invokeMethod(
@@ -77,11 +80,13 @@ class _PlayGamesContainerState extends State<PlayGamesContainer> {
             'score': time,
           },
         );
-      } on PlatformException {}
+      } on PlatformException {
+        // Ignored
+      }
     }
   }
 
-  void showLeaderboard({@required String key}) async {
+  void showLeaderboard({required String key}) async {
     if (_isSupportedInternal()) {
       try {
         await playGames.invokeMethod(
@@ -90,7 +95,9 @@ class _PlayGamesContainerState extends State<PlayGamesContainer> {
             'id': key,
           },
         );
-      } on PlatformException {}
+      } on PlatformException {
+        // Ignored
+      }
     }
   }
 
@@ -100,7 +107,7 @@ class _PlayGamesContainerState extends State<PlayGamesContainer> {
   // AppStateContainer --> InheritedStateContainer --> The rest of an app.
   @override
   Widget build(BuildContext context) {
-    return new _InheritedStateContainer(
+    return _InheritedStateContainer(
       data: this,
       child: widget.child,
     );
@@ -108,13 +115,12 @@ class _PlayGamesContainerState extends State<PlayGamesContainer> {
 }
 
 class _InheritedStateContainer extends InheritedWidget {
-  final _PlayGamesContainerState data;
+  final PlayGamesContainerState data;
 
-  _InheritedStateContainer({
-    Key key,
-    @required this.data,
-    @required Widget child,
-  }) : super(key: key, child: child);
+  const _InheritedStateContainer({
+    required this.data,
+    required super.child,
+  });
 
   @override
   bool updateShouldNotify(_InheritedStateContainer old) => true;

@@ -6,41 +6,40 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ConfigUiContainer extends StatefulWidget {
   final Widget child;
 
-  ConfigUiContainer({@required this.child});
+  const ConfigUiContainer({super.key, required this.child});
 
-  static _ConfigUiContainerState of(BuildContext context) {
+  static ConfigUiContainerState? of(BuildContext context) {
     return context
         .dependOnInheritedWidgetOfExactType<_InheritedStateContainer>()
-        .data;
+        ?.data;
   }
 
   @override
-  _ConfigUiContainerState createState() => _ConfigUiContainerState();
+  ConfigUiContainerState createState() => ConfigUiContainerState();
 }
 
-class _ConfigUiContainerState extends State<ConfigUiContainer> {
-  static const _DEFAULT_USE_DARK_THEME = null;
-  static const _DEFAULT_SPEED_RUN_MODE_ENABLED = false;
-  static const _KEY_USE_DARK_THEME = 'ui::dark_theme_enabled';
-  static const _KEY_SPEED_RUN_MODE_ENABLED = 'ui::speed_run_mode_enabled';
+class ConfigUiContainerState extends State<ConfigUiContainer> {
+  static const _defaultUseDarkTheme = null;
+  static const _defaultSpeedRunModeEnabled = false;
+  static const _keyUseDarkTheme = 'ui::dark_theme_enabled';
+  static const _keySpeedRunModeEnabled = 'ui::speed_run_mode_enabled';
 
   /// `true` if the app uses a global dark theme,
   /// `false` otherwise.
-  bool useDarkTheme;
+  bool? useDarkTheme;
 
-  bool isSpeedRunModeEnabled;
+  bool isSpeedRunModeEnabled = _defaultSpeedRunModeEnabled;
 
   @override
   void initState() {
     super.initState();
-    useDarkTheme = _DEFAULT_USE_DARK_THEME;
-    isSpeedRunModeEnabled = _DEFAULT_SPEED_RUN_MODE_ENABLED;
+    useDarkTheme = _defaultUseDarkTheme;
 
     _loadPreferences();
   }
 
   void _loadPreferences() async {
-    SharedPreferences prefs;
+    late SharedPreferences prefs;
     try {
       prefs = await SharedPreferences.getInstance();
     } on Exception {
@@ -51,31 +50,29 @@ class _ConfigUiContainerState extends State<ConfigUiContainer> {
   }
 
   void _loadThemePreferences(final SharedPreferences prefs) {
-    final useDarkTheme = prefs.getBool(_KEY_USE_DARK_THEME);
+    final useDarkTheme = prefs.getBool(_keyUseDarkTheme);
     setUseDarkTheme(useDarkTheme);
   }
 
   void _loadSpeedRunPreferences(final SharedPreferences prefs) {
-    final isSpeedRunModeEnabled = prefs.getBool(_KEY_SPEED_RUN_MODE_ENABLED) ??
+    final isSpeedRunModeEnabled = prefs.getBool(_keySpeedRunModeEnabled) ??
         this.isSpeedRunModeEnabled;
     setSpeedRunModeEnabled(isSpeedRunModeEnabled);
   }
 
   /// Sets if user want app to show up in a dark theme or
   /// a white theme.
-  void setUseDarkTheme(final bool useDarkTheme,
+  void setUseDarkTheme(final bool? useDarkTheme,
       {final bool save = false}) async {
     // Save the choice if we
     // want to.
-    if (save) {
+    if (save && useDarkTheme != null) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        if (useDarkTheme == null) {
-          prefs.remove(_KEY_USE_DARK_THEME);
-        } else {
-          prefs.setBool(_KEY_USE_DARK_THEME, useDarkTheme);
-        }
-      } on Exception {}
+        prefs.setBool(_keyUseDarkTheme, useDarkTheme);
+      } on Exception {
+        // Ignored
+      }
     }
 
     setState(() {
@@ -90,12 +87,14 @@ class _ConfigUiContainerState extends State<ConfigUiContainer> {
     if (save) {
       try {
         final prefs = await SharedPreferences.getInstance();
-        prefs.setBool(_KEY_SPEED_RUN_MODE_ENABLED, isEnabled);
-      } on Exception {}
+        prefs.setBool(_keySpeedRunModeEnabled, isEnabled);
+      } on Exception {
+        // Ignored
+      }
     }
 
     setState(() {
-      this.isSpeedRunModeEnabled = isEnabled;
+      isSpeedRunModeEnabled = isEnabled;
     });
   }
 
@@ -103,7 +102,7 @@ class _ConfigUiContainerState extends State<ConfigUiContainer> {
   // AppStateContainer --> InheritedStateContainer --> The rest of an app.
   @override
   Widget build(BuildContext context) {
-    return new _InheritedStateContainer(
+    return _InheritedStateContainer(
       data: this,
       child: widget.child,
     );
@@ -111,13 +110,12 @@ class _ConfigUiContainerState extends State<ConfigUiContainer> {
 }
 
 class _InheritedStateContainer extends InheritedWidget {
-  final _ConfigUiContainerState data;
+  final ConfigUiContainerState data;
 
-  _InheritedStateContainer({
-    Key key,
-    @required this.data,
-    @required Widget child,
-  }) : super(key: key, child: child);
+  const _InheritedStateContainer({
+    required this.data,
+    required super.child,
+  });
 
   @override
   bool updateShouldNotify(_InheritedStateContainer old) => true;

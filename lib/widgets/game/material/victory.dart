@@ -2,46 +2,46 @@ import 'package:classic_15_puzzle/data/result.dart';
 import 'package:classic_15_puzzle/play_games.dart';
 import 'package:classic_15_puzzle/widgets/game/format.dart';
 import 'package:flutter/material.dart';
-import 'package:share/share.dart';
+import 'package:share_plus/share_plus.dart';
 
 class GameVictoryDialog extends StatelessWidget {
   final Result result;
 
   final String Function(int) timeFormatter;
 
-  GameVictoryDialog({
-    @required this.result,
-    this.timeFormatter: formatElapsedTime,
+  const GameVictoryDialog({super.key, 
+    required this.result,
+    this.timeFormatter = formatElapsedTime,
   });
 
   @override
   Widget build(BuildContext context) {
     final timeFormatted = timeFormatter(result.time);
     final actions = <Widget>[
-      new FlatButton(
-        child: new Text("Share"),
+      TextButton(
+        child: const Text("Share"),
         onPressed: () {
           Share.share("I have solved the Classic 15 Puzzle "
               "${result.size}x${result.size} puzzle in $timeFormatted "
               "with just ${result.steps} steps!");
         },
       ),
-      new FlatButton(
-        child: new Text("Close"),
+      TextButton(
+        child: const Text("Close"),
         onPressed: () {
           Navigator.of(context).pop();
         },
       ),
     ];
 
-    if (PlayGamesContainer.of(context).isSupported) {
+    if (PlayGamesContainer.of(context)?.isSupported == true) {
       actions.insert(
         0,
-        new FlatButton(
-          child: new Text("Leaderboard"),
+        TextButton(
+          child: const Text("Leaderboard"),
           onPressed: () {
             final playGames = PlayGamesContainer.of(context);
-            playGames.showLeaderboard(
+            playGames?.showLeaderboard(
               key: PlayGames.getLeaderboardOfSize(result.size),
             );
           },
@@ -53,7 +53,7 @@ class GameVictoryDialog extends StatelessWidget {
       title: Center(
         child: Text(
           "Congratulations!",
-          style: Theme.of(context).textTheme.headline5,
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
       content: Column(
@@ -71,12 +71,12 @@ class GameVictoryDialog extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     'Time:',
-                    style: Theme.of(context).textTheme.caption,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
                     timeFormatted,
-                    style: Theme.of(context).textTheme.headline3.copyWith(
-                          color: Theme.of(context).textTheme.bodyText1.color,
+                    style: (Theme.of(context).textTheme.displaySmall ?? const TextStyle()).copyWith(
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
                         ),
                   ),
                 ],
@@ -87,12 +87,12 @@ class GameVictoryDialog extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     'Steps:',
-                    style: Theme.of(context).textTheme.caption,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
                     '${result.steps}',
-                    style: Theme.of(context).textTheme.headline3.copyWith(
-                          color: Theme.of(context).textTheme.bodyText1.color,
+                    style: (Theme.of(context).textTheme.displaySmall ?? const TextStyle()).copyWith(
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
                         ),
                   ),
                 ],

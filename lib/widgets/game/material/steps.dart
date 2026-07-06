@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 /// Widget shows the current steps counter of
 /// a game.
 class GameStepsWidget extends StatefulWidget {
   final int steps;
 
-  GameStepsWidget({@required this.steps});
+  const GameStepsWidget({super.key, required this.steps});
 
   @override
-  _GameStepsState createState() => _GameStepsState();
+  GameStepsState createState() => GameStepsState();
 }
 
-class _GameStepsState extends State<GameStepsWidget> {
+class GameStepsState extends State<GameStepsWidget> {
   @override
   Widget build(BuildContext context) {
     return Text(
       '${widget.steps} steps',
-      style: Theme.of(context).textTheme.subtitle1,
+      style: Theme.of(context).textTheme.titleMedium,
     );
   }
 }

@@ -7,13 +7,10 @@ import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-bool firstTime = true;
-
 class GameMaterialPage extends StatefulWidget {
-  const GameMaterialPage({Key key}) : super(key: key);
+  const GameMaterialPage({super.key});
 
   static const kMaxBoardSize = 600.0;
 
@@ -22,22 +19,24 @@ class GameMaterialPage extends StatefulWidget {
   static const kBoardPadding = 8.0;
 
   @override
-  _GameMaterialPageState createState() => _GameMaterialPageState();
+  GameMaterialPageState createState() => GameMaterialPageState();
 }
 
-class _GameMaterialPageState extends State<GameMaterialPage> {
+class GameMaterialPageState extends State<GameMaterialPage> {
   final FocusNode _boardFocus = FocusNode();
 
-  BannerAd _ad;
+  late BannerAd _ad;
 
   bool _isAdLoaded = false;
+
+  bool _firstTime = true;
 
   @override
   void initState() {
     _ad = BannerAd(
       adUnitId: AdsManager.bannerAdUnitId,
       size: AdSize.banner,
-      request: AdRequest(),
+      request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (_) {
           setState(() {
@@ -48,7 +47,7 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
           // Releases an ad resource when it fails to load
           ad.dispose();
 
-          print('Ad load failed (code=${error.code} message=${error.message})');
+          debugPrint('Ad load failed (code=${error.code} message=${error.message})');
         },
       ),
     );
@@ -67,19 +66,19 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
 
     final boardWidget = _buildBoard(context);
 
-    if (firstTime) {
+    if (_firstTime) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(Duration(seconds: 1), () {
+        Future.delayed(const Duration(seconds: 1), () {
           presenter.play();
         });
       });
+      _firstTime = false;
     }
-    firstTime = false;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Classic 15 Puzzle"),
-        backgroundColor: Color(0xffA2907D),
+        title: const Text("Classic 15 Puzzle"),
+        backgroundColor: const Color(0xffA2907D),
         actions: [
           IconButton(
             onPressed: () {
@@ -94,7 +93,7 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
                 },
               );
             },
-            icon: Icon(
+            icon: const Icon(
               Icons.settings_rounded,
             ),
           )
@@ -105,34 +104,34 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
           // mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Container(
-                margin: EdgeInsets.fromLTRB(0.0, 30.0, 0.0, 0.0),
+                margin: const EdgeInsets.fromLTRB(0.0, 30.0, 0.0, 0.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: <Widget>[
                     Container(
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                           color: Color(0xffA2907D),
                           borderRadius: BorderRadius.all(Radius.circular(18))),
-                      child: Container(
+                      child: SizedBox(
                         width: 180.0,
                         height: 80.0,
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
-                              Text(
+                              const Text(
                                 "Moves",
                                 style: TextStyle(
                                   fontSize: 18.0,
                                   color: Colors.white,
                                 ),
                               ),
-                              SizedBox(
+                              const SizedBox(
                                 height: 8,
                               ),
                               Text(
                                 presenter.steps.toString(),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 21.0,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -150,14 +149,14 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
                         onPressed: () {
                           presenter.play();
                         },
-                        child: Icon(
+                        style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(const Color(0xffA2907D)),
+                            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)))),
+                        child: const Icon(
                           Icons.refresh_rounded,
                           size: 36,
                         ),
-                        style: ButtonStyle(
-                            backgroundColor: MaterialStateProperty.all(Color(0xffA2907D)),
-                            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)))),
                       ),
                     )
                   ],
@@ -165,13 +164,12 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
             Container(
               height: 20.0,
             ),
-            boardWidget,
-            Spacer(),
+            Expanded(child: boardWidget),
             if (_isAdLoaded)
               Container(
-                margin: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: AdWidget(ad: _ad),
+                margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 height: 50.0,
+                child: AdWidget(ad: _ad),
               ),
           ],
         ),
@@ -182,11 +180,11 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
   Widget _buildBoard(final BuildContext context) {
     final presenter = GamePresenterWidget.of(context);
     final config = ConfigUiContainer.of(context);
-    final background = Color(0xffA2907D);
+    const background = Color(0xffA2907D);
     return Center(
       child: Container(
-        margin: EdgeInsets.all(GameMaterialPage.kBoardMargin),
-        padding: EdgeInsets.all(GameMaterialPage.kBoardPadding),
+        margin: const EdgeInsets.all(GameMaterialPage.kBoardMargin),
+        padding: const EdgeInsets.all(GameMaterialPage.kBoardPadding),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(16.0),
@@ -202,11 +200,11 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
                   (GameMaterialPage.kBoardMargin + GameMaterialPage.kBoardPadding) * 2,
             );
 
-            return RawKeyboardListener(
+            return KeyboardListener(
               autofocus: true,
               focusNode: _boardFocus,
-              onKey: (event) {
-                if (!(event is RawKeyDownEvent)) {
+              onKeyEvent: (event) {
+                if (event is! KeyDownEvent) {
                   return;
                 }
 
@@ -239,7 +237,7 @@ class _GameMaterialPageState extends State<GameMaterialPage> {
                 presenter.tap(point: tapPoint);
               },
               child: BoardWidget(
-                isSpeedRunModeEnabled: config.isSpeedRunModeEnabled,
+                isSpeedRunModeEnabled: config?.isSpeedRunModeEnabled ?? false,
                 board: presenter.board,
                 size: puzzleSize,
                 onTap: (point) {

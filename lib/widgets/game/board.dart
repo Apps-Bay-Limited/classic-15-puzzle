@@ -5,7 +5,6 @@ import 'package:classic_15_puzzle/data/chip.dart';
 import 'package:classic_15_puzzle/domain/game.dart';
 import 'package:classic_15_puzzle/widgets/game/chip.dart';
 import 'package:flutter/material.dart' hide Chip;
-import 'package:flutter/widgets.dart';
 
 class BoardWidget extends StatefulWidget {
   final Board board;
@@ -14,37 +13,35 @@ class BoardWidget extends StatefulWidget {
 
   final bool showNumbers;
 
-  final Function(Point<int>) onTap;
+  final void Function(Point<int>)? onTap;
 
   final bool isSpeedRunModeEnabled;
 
-  BoardWidget({
-    Key key,
-    @required this.board,
-    @required this.size,
+  const BoardWidget({
+    super.key,
+    required this.board,
+    required this.size,
     this.showNumbers = true,
     this.isSpeedRunModeEnabled = false,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
-  _BoardWidgetState createState() => _BoardWidgetState();
+  BoardWidgetState createState() => BoardWidgetState();
 }
 
-class _BoardWidgetState extends State<BoardWidget>
+class BoardWidgetState extends State<BoardWidget>
     with TickerProviderStateMixin {
-  static const _ANIM_COLOR_OVERLAY_TAG = "color_overlay";
-  static const _ANIM_COLOR_BACKGROUND_TAG = "color_background";
-  static const _ANIM_MOVE_TAG = "move";
-  static const _ANIM_SCALE_TAG = "scale";
+  static const _animColorOverlayTag = "color_overlay";
+  static const _animMoveTag = "move";
+  static const _animScaleTag = "scale";
 
-  static const num _ANIM_DURATION_MULTIPLIER_NORMAL = 1.0;
-  static const num _ANIM_DURATION_MULTIPLIER_SPEED_RUN = 0.6;
+  static const num _animDurationMultiplierNormal = 1.0;
+  static const num _animDurationMultiplierSpeedRun = 0.6;
 
-  static const int _ANIM_DURATION_BLINK_HALF = 200;
-  static const int _ANIM_DURATION_MOVE = 350;
-  static const int _ANIM_DURATION_COLOR_BACKGROUND = 200;
-  static const int _ANIM_DURATION_COLOR_OVERLAY = 1200;
+  static const int _animDurationBlinkHalf = 200;
+  static const int _animDurationMove = 350;
+  static const int _animDurationColorOverlay = 1200;
 
   static const double _kFriction = 0.015;
 
@@ -52,14 +49,14 @@ class _BoardWidgetState extends State<BoardWidget>
 
   static const double _initialVelocityPenetration = 3.065;
 
-  final Color rightColor = Color(0xffF4B17E);
-  final Color rightFontColor = Color(0xff786D64);
+  static const Color rightColor = Color(0xffF4B17E);
+  static const Color rightFontColor = Color(0xff786D64);
 
   static double _decelerationForFriction(double friction) {
     return friction * 61774.04968;
   }
 
-  static double _flingDuration({double friction: _kFriction, double velocity}) {
+  static double _flingDuration({double friction = _kFriction, required double velocity}) {
     // See mPhysicalCoeff
     final double scaledFriction = friction * _decelerationForFriction(0.84);
 
@@ -69,26 +66,27 @@ class _BoardWidgetState extends State<BoardWidget>
     return exp(deceleration / (_kDecelerationRate - 1.0));
   }
 
-  static double _flingOffset({double friction: _kFriction, double velocity}) {
-    var _duration = _flingDuration(friction: friction, velocity: velocity);
-    return velocity * _duration / _initialVelocityPenetration;
+  static double _flingOffset({double friction = _kFriction, required double velocity}) {
+    var duration = _flingDuration(friction: friction, velocity: velocity);
+    return velocity * duration / _initialVelocityPenetration;
   }
 
-  List<_Chip> chips;
+  late List<_Chip> chips = [];
 
-  Function(double, double) _onPanEndDelegate;
+  Function(double, double)? _onPanEndDelegate;
 
-  Function(double, double) _onPanUpdateDelegate;
+  Function(double, double)? _onPanUpdateDelegate;
 
-  bool _isSpeedRunModeEnabled;
+  bool _isSpeedRunModeEnabled = false;
 
   /// Applies normal/speed run duration modifiers */
   int _applyAnimationMultiplier(int duration) {
     if (_isSpeedRunModeEnabled) {
-      return (duration.toDouble() * _ANIM_DURATION_MULTIPLIER_SPEED_RUN)
+      return (duration.toDouble() * _animDurationMultiplierSpeedRun)
           .toInt();
-    } else
-      return (duration.toDouble() * _ANIM_DURATION_MULTIPLIER_NORMAL).toInt();
+    } else {
+      return (duration.toDouble() * _animDurationMultiplierNormal).toInt();
+    }
   }
 
   @override
@@ -115,101 +113,20 @@ class _BoardWidgetState extends State<BoardWidget>
   void _performSetPrevBoard() =>
       _performSetBoard(newBoard: widget.board, oldBoard: widget.board);
 
-  void _performSetBoard({final Board newBoard, final Board oldBoard}) {
-    if (newBoard == null) {
-      setState(() {
-        // Dispose current animations. This is not necessary, but good
-        // to do.
-        chips?.forEach((chip) {
-          chip.animations.values.forEach((controller) => controller.dispose());
-        });
-
-        chips = null;
-      });
-      return;
-    }
-
+  void _performSetBoard({required final Board newBoard, final Board? oldBoard}) {
     final board = newBoard;
-    if (chips == null || board.chips.length != oldBoard.chips.length) {
-      // The size of the board has been changed...
-      // rebuild everything!
+    if (oldBoard == null || board.chips.length != oldBoard.chips.length) {
+      // The size of the board has been changed or it's the initial load.
       setState(() {
-        final hueStep = 360 / board.chips.length;
-
-        void _changeTo(int length) {
-          for (var i = 0; i < length; i++) {
-            final chip = board.chips[i];
-            final extra = chips[i];
-
-            final wasCurrentPoint = extra.currentPoint;
-            extra.touched = false;
-            extra.currentPoint = chip.currentPoint;
-            _onChipChangePosition(chip, wasCurrentPoint, chip.currentPoint,
-                enableColorAnimation: false);
-
-            // Change the color of the chip.
-            final color = rightColor;
-            final colorFont = rightFontColor;
-            // HSLColor.fromAHSL(1, hueStep * chip.number, 0.7, 0.5).toColor();
-            _startColorBackgroundAnimation(
-              chip,
-              from: extra.backgroundColor,
-              to: color,
-              fromFont: extra.fontColor,
-              toFont: colorFont,
-            );
-          }
-        }
-
-        if (chips != null) {
-          if (chips.length > board.chips.length) {
-            // Remove a few chips with a smooth animation.
-            chips = chips.sublist(0, board.chips.length);
-            _changeTo(board.chips.length);
-            return;
-          } else {
-            // chips length < new chips length
-            final delta = board.chips.length - chips.length;
-            final newChips = List.generate(delta, (index) {
-              final chip = board.chips[chips.length + index];
-              final x = chip.currentPoint.x / board.size;
-              final y = chip.currentPoint.y / board.size;
-              final scale = 0.0; // will be scaled by the animation
-              final color = rightColor;
-              final colorFont = rightFontColor;
-              // HSLColor.fromAHSL(1, hueStep * chip.number, 0.7, 0.5)
-              //     .toColor();
-              return _Chip(
-                x,
-                y,
-                chip.currentPoint,
-                scale: scale,
-                backgroundColor: color,
-                fontColor: colorFont,
-              );
-            });
-
-            chips = chips + newChips;
-
-            for (var i = oldBoard.chips.length; i < board.chips.length; i++) {
-              _startAppearAnimation(board.chips[i]);
-            }
-
-            _changeTo(oldBoard.chips.length);
-            return;
-          }
-        }
-
         // Create our extras
         chips = board.chips.map((chip) {
           final x = chip.currentPoint.x / board.size;
           final y = chip.currentPoint.y / board.size;
-          final color = rightColor;
-          final colorFont = rightFontColor;
-          // HSLColor.fromAHSL(1, hueStep * chip.number, 0.7, 0.5).toColor();
+          const color = rightColor;
+          const colorFont = rightFontColor;
           return _Chip(x, y, chip.currentPoint,
               backgroundColor: color, fontColor: colorFont);
-        }).toList(growable: false);
+        }).toList();
       });
       return;
     }
@@ -227,70 +144,6 @@ class _BoardWidgetState extends State<BoardWidget>
             enableColorAnimation: !wasTouched);
       }
     }
-  }
-
-  // ---- Change the size of the board ----
-
-  void _startAppearAnimation(Chip chip) {
-    final duration = Duration(
-        milliseconds: _applyAnimationMultiplier(_ANIM_DURATION_BLINK_HALF));
-    final curve = Curves.easeIn;
-
-    final controller = AnimationController(
-      duration: duration,
-      vsync: this,
-    );
-
-    final target = chips[chip.number];
-    final animation = CurvedAnimation(
-      parent: controller,
-      curve: curve,
-    );
-    animation.addListener(() {
-      final scale = cos(animation.value * 2.0 * pi) / 2.0 + 0.5;
-      setState(() {
-        target.scale = scale;
-      });
-    });
-
-    _addAnimation(chip, _ANIM_SCALE_TAG, controller);
-    controller
-        .forward()
-        .then<void>((_) => _disposeAnimation(chip, _ANIM_SCALE_TAG));
-  }
-
-  void _startColorBackgroundAnimation(Chip chip,
-      {Color from, Color to, Color fromFont, Color toFont}) {
-    final duration = Duration(
-        milliseconds:
-            _applyAnimationMultiplier(_ANIM_DURATION_COLOR_BACKGROUND));
-    final curve = Curves.easeIn;
-
-    final controller = AnimationController(
-      duration: duration,
-      vsync: this,
-    );
-
-    final target = chips[chip.number];
-    final animation = CurvedAnimation(
-      parent: controller,
-      curve: curve,
-    );
-    animation.addListener(() {
-      final scale = cos(animation.value * 2.0 * pi) / 2.0 + 0.5;
-      final color = Color.alphaBlend(from.withOpacity(1.0 - scale), to);
-      final colorFont =
-          Color.alphaBlend(fromFont.withOpacity(1.0 - scale), toFont);
-      setState(() {
-        target.backgroundColor = color;
-        target.fontColor = colorFont;
-      });
-    });
-
-    _addAnimation(chip, _ANIM_COLOR_BACKGROUND_TAG, controller);
-    controller
-        .forward()
-        .then<void>((_) => _disposeAnimation(chip, _ANIM_COLOR_BACKGROUND_TAG));
   }
 
   // ---- Shuffle the chips ----
@@ -315,7 +168,7 @@ class _BoardWidgetState extends State<BoardWidget>
   void _startMoveAnimation(Chip chip, Point<int> point) {
     final controller = AnimationController(
       duration: Duration(
-          milliseconds: _applyAnimationMultiplier(_ANIM_DURATION_MOVE)),
+          milliseconds: _applyAnimationMultiplier(_animDurationMove)),
       vsync: this,
     );
 
@@ -344,18 +197,18 @@ class _BoardWidgetState extends State<BoardWidget>
 
     // Start and dispose the animation
     // after its finish.
-    _addAnimation(chip, _ANIM_MOVE_TAG, controller);
+    _addAnimation(chip, _animMoveTag, controller);
     controller
         .forward()
-        .then<void>((_) => _disposeAnimation(chip, _ANIM_MOVE_TAG));
+        .then<void>((_) => _disposeAnimation(chip, _animMoveTag));
   }
 
   void _startBlinkAnimation(Chip chip, Point<int> point) {
     final duration = Duration(
-        milliseconds: _applyAnimationMultiplier(_ANIM_DURATION_BLINK_HALF) * 2);
-    final curve = Curves.easeInOut;
+        milliseconds: _applyAnimationMultiplier(_animDurationBlinkHalf) * 2);
+    const curve = Curves.easeInOut;
 
-    void _startScaleAnimation(Chip chip, Point<int> point) {
+    void startScaleAnimation(Chip chip, Point<int> point) {
       final controller = AnimationController(
         duration: duration,
         vsync: this,
@@ -373,13 +226,13 @@ class _BoardWidgetState extends State<BoardWidget>
         });
       });
 
-      _addAnimation(chip, _ANIM_SCALE_TAG, controller);
+      _addAnimation(chip, _animScaleTag, controller);
       controller
           .forward()
-          .then<void>((_) => _disposeAnimation(chip, _ANIM_SCALE_TAG));
+          .then<void>((_) => _disposeAnimation(chip, _animScaleTag));
     }
 
-    void _startMoveAnimation(Chip chip, Point<int> point) {
+    void startMoveAnimation(Chip chip, Point<int> point) {
       final controller = AnimationController(
         duration: duration,
         vsync: this,
@@ -407,21 +260,21 @@ class _BoardWidgetState extends State<BoardWidget>
         }
       });
 
-      _addAnimation(chip, _ANIM_MOVE_TAG, controller);
+      _addAnimation(chip, _animMoveTag, controller);
       controller
           .forward()
-          .then<void>((_) => _disposeAnimation(chip, _ANIM_MOVE_TAG));
+          .then<void>((_) => _disposeAnimation(chip, _animMoveTag));
     }
 
-    _startScaleAnimation(chip, point);
-    _startMoveAnimation(chip, point);
+    startScaleAnimation(chip, point);
+    startMoveAnimation(chip, point);
   }
 
   void _startColorOverlayAnimation(Chip chip) {
     final controller = AnimationController(
       duration: Duration(
           milliseconds:
-              _applyAnimationMultiplier(_ANIM_DURATION_COLOR_OVERLAY)),
+              _applyAnimationMultiplier(_animDurationColorOverlay)),
       vsync: this,
     );
 
@@ -437,10 +290,10 @@ class _BoardWidgetState extends State<BoardWidget>
       });
     });
 
-    _addAnimation(chip, _ANIM_COLOR_OVERLAY_TAG, controller);
+    _addAnimation(chip, _animColorOverlayTag, controller);
     controller
         .forward()
-        .then<void>((_) => _disposeAnimation(chip, _ANIM_COLOR_OVERLAY_TAG));
+        .then<void>((_) => _disposeAnimation(chip, _animColorOverlayTag));
   }
 
   void _addAnimation(
@@ -466,35 +319,25 @@ class _BoardWidgetState extends State<BoardWidget>
   @override
   Widget build(BuildContext context) {
     final board = widget.board;
-    if (board == null) {
-      return SizedBox(
-        width: widget.size,
-        height: widget.size,
-        child: Center(
-          child: Text('Empty board'),
-        ),
-      );
-    }
     final blank = _buildChipWidgetSkeleton(
       x: board.blank.x.toDouble() / board.size.toDouble(),
       y: board.blank.y.toDouble() / board.size.toDouble(),
       scale: 1.0,
       chip: (chipSize) => Semantics(
         label: "",
-        child: Text(
+        child: const Text(
           "Blank space",
           style: TextStyle(color: Colors.transparent),
         ),
       ),
     );
-    final chips = board.chips.map(_buildChipWidget).toList();
-    chips.add(blank);
-    final boardStack = Stack(children: chips);
+    final chipsWidgets = board.chips.map(_buildChipWidget).toList();
+    chipsWidgets.add(blank);
+    final boardStack = Stack(children: chipsWidgets);
     return SizedBox(
       width: widget.size,
       height: widget.size,
-      child: widget.onTap != null
-          ? GestureDetector(
+      child: GestureDetector(
               onPanStart: (DragStartDetails details) =>
                   onPanStart(context, details),
               onPanCancel: onPanCancel,
@@ -502,8 +345,7 @@ class _BoardWidgetState extends State<BoardWidget>
               onPanEnd: onPanEnd,
               onTapDown: onTapDown,
               child: boardStack,
-            )
-          : boardStack,
+            ),
     );
   }
 
@@ -520,7 +362,7 @@ class _BoardWidgetState extends State<BoardWidget>
     // Calculate the colors.
     final overlayColor = extra.overlayColor;
     final backgroundColor =
-        extra.backgroundColor.withOpacity(dst < 1 ? 1 - dst : 0);
+        extra.backgroundColor.withValues(alpha: dst < 1 ? 1 - dst : 0);
     final fontColor = extra.fontColor;
 
     return _buildChipWidgetSkeleton(
@@ -534,9 +376,9 @@ class _BoardWidgetState extends State<BoardWidget>
         fontColor,
         chipSize / 3 + 10,
         size: widget.size,
-        onPressed: widget.onTap != null && !_isSpeedRunModeEnabled
+        onPressed: !_isSpeedRunModeEnabled
             ? () {
-                widget.onTap(chip.currentPoint);
+                widget.onTap?.call(chip.currentPoint);
               }
             : null,
       ),
@@ -544,10 +386,10 @@ class _BoardWidgetState extends State<BoardWidget>
   }
 
   Widget _buildChipWidgetSkeleton({
-    double x,
-    double y,
-    double scale,
-    Widget Function(double) chip,
+    required double x,
+    required double y,
+    required double scale,
+    required Widget Function(double) chip,
   }) {
     final board = widget.board;
     final chipSize = widget.size / board.size;
@@ -564,24 +406,21 @@ class _BoardWidgetState extends State<BoardWidget>
   }
 
   void onTapDown(TapDownDetails details) {
-    final board = widget.board;
-
-    if (board == null || chips == null || !_isSpeedRunModeEnabled) {
+    if (!_isSpeedRunModeEnabled) {
       return;
     }
 
-    _Chip activeChip = _findActiveChip(details.globalPosition);
-    if (activeChip == null) {
-      return;
-    }
+    _Chip? activeChip = _findActiveChip(details.globalPosition);
 
-    widget.onTap?.call(activeChip.currentPoint);
+    if (activeChip != null) {
+      widget.onTap?.call(activeChip.currentPoint);
+    }
   }
 
   void onPanStart(BuildContext context, DragStartDetails details) {
     final board = widget.board;
 
-    if (board == null || chips == null || _isSpeedRunModeEnabled) {
+    if (_isSpeedRunModeEnabled) {
       _onPanUpdateDelegate = null;
       _onPanEndDelegate = null;
       return;
@@ -590,10 +429,8 @@ class _BoardWidgetState extends State<BoardWidget>
     final boardWidgetSize = widget.size;
     final chipWidgetSize = boardWidgetSize / board.size;
 
-    _Chip activeChip = _findActiveChip(details.globalPosition);
+    _Chip? activeChip = _findActiveChip(details.globalPosition);
     if (activeChip == null) {
-      _onPanUpdateDelegate = null;
-      _onPanEndDelegate = null;
       return;
     }
 
@@ -649,7 +486,7 @@ class _BoardWidgetState extends State<BoardWidget>
         activeChip.y = y;
 
         activeChip.touched = true;
-        activeChip.animations.remove(_ANIM_MOVE_TAG)?.dispose();
+        activeChip.animations.remove(_animMoveTag)?.dispose();
 
         for (int i = 1; i < group.length; i++) {
           final _Chip prev = group[i - 1];
@@ -665,7 +502,7 @@ class _BoardWidgetState extends State<BoardWidget>
               }
 
               next.touched = true;
-              next.animations.remove(_ANIM_MOVE_TAG)?.dispose();
+              next.animations.remove(_animMoveTag)?.dispose();
             }
           } else {
             var dy = chipWidgetSize - (next.y - prev.y).abs() * boardWidgetSize;
@@ -677,7 +514,7 @@ class _BoardWidgetState extends State<BoardWidget>
               }
 
               next.touched = true;
-              next.animations.remove(_ANIM_MOVE_TAG)?.dispose();
+              next.animations.remove(_animMoveTag)?.dispose();
             }
           }
         }
@@ -708,7 +545,7 @@ class _BoardWidgetState extends State<BoardWidget>
       );
 
       if (newTouchChipPoint != activeChip.currentPoint) {
-        widget.onTap(activeChip.currentPoint);
+        widget.onTap?.call(activeChip.currentPoint);
       } else if (group.length >= 2) {
         final nextToTouchChip = group[1];
         final nextToTouchChipPoint = Point(
@@ -717,7 +554,7 @@ class _BoardWidgetState extends State<BoardWidget>
         );
 
         if (nextToTouchChipPoint != nextToTouchChip.currentPoint) {
-          widget.onTap(nextToTouchChip.currentPoint);
+          widget.onTap?.call(nextToTouchChip.currentPoint);
         } else {
           _performSetPrevBoard();
         }
@@ -731,12 +568,12 @@ class _BoardWidgetState extends State<BoardWidget>
     };
   }
 
-  _Chip _findActiveChip(Offset globalPosition) {
+  _Chip? _findActiveChip(Offset globalPosition) {
     final board = widget.board;
     final boardWidgetSize = widget.size;
     final chipWidgetSize = boardWidgetSize / board.size;
 
-    final RenderBox box = context.findRenderObject();
+    final RenderBox box = context.findRenderObject() as RenderBox;
     final localPos = box.globalToLocal(globalPosition);
     final touchX = localPos.dx;
     final touchY = localPos.dy;
@@ -795,7 +632,7 @@ class _Chip {
 
   Color fontColor = Colors.black;
 
-  Map<String, AnimationController> animations = Map();
+  Map<String, AnimationController> animations = {};
 
   Point<int> currentPoint;
 
@@ -803,8 +640,8 @@ class _Chip {
     this.x,
     this.y,
     this.currentPoint, {
-    this.scale: 1,
-    this.backgroundColor,
-    this.fontColor,
+    this.scale = 1,
+    required this.backgroundColor,
+    required this.fontColor,
   });
 }
