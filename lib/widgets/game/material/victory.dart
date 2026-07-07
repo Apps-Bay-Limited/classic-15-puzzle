@@ -40,13 +40,9 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
         icon: const Icon(Icons.share_rounded, size: 18),
         label: const Text("SHARE"),
         onPressed: () {
-          SharePlus.instance.share(
-            ShareParams(
-              text: "I solved the Classic 15 Puzzle "
-                  "${widget.result.size}x${widget.result.size} in $timeFormatted "
-                  "with ${widget.result.steps} moves!",
-            ),
-          );
+          Share.share("I solved the Classic 15 Puzzle "
+              "${widget.result.size}x${widget.result.size} in $timeFormatted "
+              "with ${widget.result.steps} moves!");
         },
       ),
     ];
