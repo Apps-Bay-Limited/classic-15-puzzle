@@ -78,35 +78,59 @@ class _MyMaterialApp extends _MyPlatformApp {
   @override
   Widget build(BuildContext context) {
     final ui = ConfigUiContainer.of(context);
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
 
-    ThemeData applyDecor(ThemeData theme) => theme.copyWith(
-          primaryColor: Colors.blue,
-          dialogTheme: const DialogThemeData(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16.0)),
-            ),
+    ThemeData applyDecor(ThemeData theme) {
+      return theme.copyWith(
+        dialogTheme: theme.dialogTheme.copyWith(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24.0),
           ),
-          textTheme: theme.textTheme.apply(fontFamily: 'ManRope'),
-          primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'ManRope'),
-          colorScheme: theme.colorScheme.copyWith(secondary: Colors.amberAccent),
-        );
+          elevation: isIOS ? 0 : 6,
+        ),
+        cardTheme: theme.cardTheme.copyWith(
+          elevation: isIOS ? 0 : 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: isIOS ? 0 : 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+        ),
+        textTheme: theme.textTheme.apply(fontFamily: 'ManRope'),
+      );
+    }
 
     final baseDarkTheme = applyDecor(ThemeData(
       brightness: Brightness.dark,
-      canvasColor: const Color(0xFF121212),
-      cardColor: const Color(0xFF1E1E1E),
-      colorScheme: const ColorScheme.dark().copyWith(surface: const Color(0xFF121212)),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xffA2907D),
+        brightness: Brightness.dark,
+        surface: const Color(0xFF121212),
+      ),
     ));
-    final baseLightTheme = applyDecor(ThemeData.light());
+
+    final baseLightTheme = applyDecor(ThemeData(
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xffA2907D),
+        brightness: Brightness.light,
+        surface: const Color(0xFFFDFCFB),
+      ),
+    ));
 
     ThemeData darkTheme;
     ThemeData lightTheme;
     if (ui?.useDarkTheme == true) {
-      // dark
       darkTheme = baseDarkTheme;
       lightTheme = baseDarkTheme;
     } else {
-      // light
       darkTheme = baseLightTheme;
       lightTheme = baseLightTheme;
     }
@@ -116,6 +140,18 @@ class _MyMaterialApp extends _MyPlatformApp {
       debugShowCheckedModeBanner: false,
       darkTheme: darkTheme,
       theme: lightTheme,
+      builder: (context, child) {
+        return MediaQuery(
+          // Ensure accessibility font scaling is respected but doesn't break layout
+          data: MediaQuery.of(context).copyWith(
+            textScaler: MediaQuery.of(context).textScaler.clamp(
+              minScaleFactor: 0.8,
+              maxScaleFactor: 1.4,
+            ),
+          ),
+          child: child!,
+        );
+      },
       home: Builder(
         builder: (context) {
           bool useDarkTheme;

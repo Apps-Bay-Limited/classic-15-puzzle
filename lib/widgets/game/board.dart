@@ -5,16 +5,13 @@ import 'package:classic_15_puzzle/data/chip.dart';
 import 'package:classic_15_puzzle/domain/game.dart';
 import 'package:classic_15_puzzle/widgets/game/chip.dart';
 import 'package:flutter/material.dart' hide Chip;
+import 'package:flutter/services.dart';
 
 class BoardWidget extends StatefulWidget {
   final Board board;
-
   final double size;
-
   final bool showNumbers;
-
   final void Function(Point<int>)? onTap;
-
   final bool isSpeedRunModeEnabled;
 
   const BoardWidget({
@@ -154,6 +151,7 @@ class BoardWidgetState extends State<BoardWidget>
     Point<int> to, {
     bool enableColorAnimation = true,
   }) {
+    HapticFeedback.lightImpact();
     if (from.x != to.x && from.y != to.y) {
       // Chip can not be physically moved this way, play
       // the blink animation along with move animation.
@@ -175,7 +173,7 @@ class BoardWidgetState extends State<BoardWidget>
     final target = chips[chip.number];
     final animation = CurvedAnimation(
       parent: controller,
-      curve: const Cubic(0.175, 0.885, 0.32, 1.125),
+      curve: Curves.easeOutCubic,
     );
 
     final board = widget.board;

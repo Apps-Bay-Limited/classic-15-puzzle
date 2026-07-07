@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Widget that can start / stop
 /// a game.
@@ -68,35 +69,40 @@ class GamePlayStopButtonState extends State<GamePlayStopButton>
     final animRatioStop = _range(animation.value, begin: 0.0, end: 1.0);
 
     // Calculate the background color of the FAB.
-    final backgroundColorAccent = theme.colorScheme.secondary.withValues(alpha: animRatioPlay);
-    final backgroundColorCard = theme.cardColor.withValues(alpha: animRatioStop);
+    final backgroundColorAccent = theme.colorScheme.primaryContainer.withValues(alpha: animRatioPlay);
+    final backgroundColorCard = theme.colorScheme.surfaceContainerHigh.withValues(alpha: animRatioStop);
     final backgroundColor =
         Color.alphaBlend(backgroundColorAccent, backgroundColorCard);
 
-    return FloatingActionButton(
+    return FloatingActionButton.large(
       backgroundColor: backgroundColor,
+      elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
       tooltip: widget.isPlaying ? "Stop" : "Play",
-      onPressed: () => widget.onTap?.call(),
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        widget.onTap?.call();
+      },
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Stack(
+        alignment: Alignment.center,
         children: <Widget>[
           Opacity(
             opacity: animRatioPlay,
-            child: Transform.rotate(
-              angle: animation.value * pi / 2.0,
-              child: Icon(
-                Icons.play_arrow,
-                color: theme.iconTheme.color,
-              ),
+            child: Icon(
+              Icons.play_arrow_rounded,
+              size: 40,
+              color: theme.colorScheme.onPrimaryContainer,
             ),
           ),
           Opacity(
             opacity: animRatioStop,
-            child: Transform.rotate(
-              angle: animation.value * pi / 2.0,
-              child: Icon(
-                Icons.stop,
-                color: theme.iconTheme.color,
-              ),
+            child: Icon(
+              Icons.stop_rounded,
+              size: 40,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],

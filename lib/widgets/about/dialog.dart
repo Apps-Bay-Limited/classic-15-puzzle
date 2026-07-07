@@ -8,68 +8,89 @@ class AboutDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const padding = EdgeInsets.symmetric(horizontal: 24);
+    final colorScheme = Theme.of(context).colorScheme;
 
-    Padding horizontalPadding(Widget child) {
-      return Padding(
-        padding: padding,
-        child: child,
-      );
-    }
-
-    return SimpleDialog(
-      title: const Text('About'),
-      children: <Widget>[
-        horizontalPadding(
-            const Text('Game of Fifteen is a free and open source app '
-                'written with Flutter. It features beautiful design and '
-                'smooth animations.')),
-        const SizedBox(height: 8),
-        horizontalPadding(
-            const Text('You can compete with your friends online. '
-                'The complexity of puzzles is similar from game to game.')),
-        const SizedBox(height: 24),
-        ListTile(
-          leading: const Icon(Icons.code, size: 24),
-          contentPadding: padding,
-          title: const Text('Join development'),
-          onTap: () {
-            launchUrl(url: urlRepository);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.bug_report, size: 24),
-          contentPadding: padding,
-          title: const Text('Send bug report'),
-          onTap: () {
-            launchUrl(url: urlFeedback);
-          },
-        ),
-        const SizedBox(height: 24),
-        FutureBuilder<PackageInfo>(
-          future: PackageInfo.fromPlatform(),
-          builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
-            String text;
-            final data = snapshot.data;
-            if (data != null) {
-              final buildVersion = data.version;
-              final buildNumber = data.buildNumber;
-              text = 'Game of Fifteen v$buildVersion-$buildNumber';
-            } else {
-              text = 'Game of Fifteen, web version';
-            }
-            return horizontalPadding(
-              Semantics(
-                label: "App version",
-                child: Text(
+    return AlertDialog(
+      title: const Text('About Game', style: TextStyle(fontWeight: FontWeight.w800)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Game of Fifteen is a premium, open-source puzzle experience. It features beautiful animations, haptic feedback, and a clean interface.',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Compete with friends online and track your best times.',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            _AboutLink(
+              icon: Icons.code_rounded,
+              label: 'Join development',
+              url: urlRepository,
+            ),
+            _AboutLink(
+              icon: Icons.bug_report_rounded,
+              label: 'Send bug report',
+              url: urlFeedback,
+            ),
+            const SizedBox(height: 24),
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final text = snapshot.hasData
+                    ? 'Version ${snapshot.data!.version} (${snapshot.data!.buildNumber})'
+                    : 'Classic 15 Puzzle';
+                return Text(
                   text,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            );
-          },
-        )
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.outline,
+                        fontWeight: FontWeight.w700,
+                      ),
+                );
+              },
+            )
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('CLOSE'),
+        ),
       ],
+    );
+  }
+}
+
+class _AboutLink extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String url;
+
+  const _AboutLink({required this.icon, required this.label, required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => launchUrl(url: url),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: colorScheme.primary),
+            const SizedBox(width: 16),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: colorScheme.outline),
+          ],
+        ),
+      ),
     );
   }
 }
