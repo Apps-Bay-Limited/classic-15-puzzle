@@ -13,9 +13,9 @@ import UIKit
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
-    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "AdConfig") {
+    if let messenger = engineBridge.pluginRegistry.registrar(forPlugin: "AdConfig")?.messenger() {
         let adChannel = FlutterMethodChannel(name: "com.appsbay.classic_15_puzzle/ad_config",
-                                                  binaryMessenger: registrar.messenger())
+                                                  binaryMessenger: messenger)
         adChannel.setMethodCallHandler({
           (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
           if call.method == "getAdBannerUnitId" {

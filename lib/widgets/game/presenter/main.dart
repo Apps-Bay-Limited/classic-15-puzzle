@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:classic_15_puzzle/data/history.dart';
+import 'package:classic_15_puzzle/domain/solver.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:classic_15_puzzle/data/board.dart';
 import 'package:classic_15_puzzle/data/result.dart';
@@ -48,6 +50,8 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
   late Board board;
 
+  late GameHistory history;
+
   int steps = 0;
 
   int time = timeStopped;
@@ -58,6 +62,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     WidgetsBinding.instance.addObserver(this);
 
     board = _createBoard(4);
+    history = GameHistory.empty();
 
     _loadState();
   }
@@ -80,14 +85,18 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     int? time;
     int? steps;
     Board? board;
+    GameHistory? history;
 
     try {
       final deserializer = MapSerializeInput(map: jsonMap);
       const boardFactory = BoardDeserializableFactory();
+      const historyFactory = GameHistoryDeserializableFactory();
+      
       elapsedTime = deserializer.readInt();
       time = deserializer.readInt();
       steps = deserializer.readInt();
       board = deserializer.readDeserializable(boardFactory);
+      history = deserializer.readDeserializable(historyFactory);
     } catch (e) {
       // Ignored
     }
@@ -113,6 +122,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       this.time = time ?? timeStopped;
       this.steps = steps ?? 0;
       this.board = board ?? _createBoard(4);
+      this.history = history ?? GameHistory.empty();
     });
   }
 
@@ -155,9 +165,13 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   }
 
   void tap({required Point<int> point}) {
+    final prevBoard = board;
+    final nextBoard = game.tap(board, point: point);
+
+    if (prevBoard == nextBoard) return;
 
     setState(() {
-      board = game.tap(board, point: point);
+      board = nextBoard;
 
       if (isPlaying()) {
         // Increment the amount of steps.
@@ -171,14 +185,24 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
             steps: steps,
             time: now - time,
             size: board.size,
+            timestamp: now,
           );
 
+          history.addResult(result);
           widget.onSolve?.call(result);
 
           stop();
         }
       }
     });
+  }
+
+  void hint() {
+    if (!isPlaying()) return;
+    final nextMove = PuzzleSolver.findNextMove(board);
+    if (nextMove != null) {
+      tap(point: nextMove);
+    }
   }
 
   /// Resets the board, keeping the `isPlaying` state
@@ -237,6 +261,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     serializer.writeInt(time);
     serializer.writeInt(steps);
     serializer.writeSerializable(board);
+    serializer.writeSerializable(history);
 
     final plainText = serializer.toJsonString();
     final encryptedText = _encrypter.encrypt(plainText, iv: _salsaIv).base64;

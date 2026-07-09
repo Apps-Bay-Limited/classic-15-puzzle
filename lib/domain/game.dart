@@ -158,6 +158,10 @@ class _GameImpl implements Game {
 
   @override
   Point<int> findChipPositionAfterTap(Board board, {required Point<int> point}) {
+    if (point == board.blank) {
+      return point;
+    }
+
     int dx;
     int dy;
     if (point.x == board.blank.x) {

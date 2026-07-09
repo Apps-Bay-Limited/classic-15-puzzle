@@ -9,8 +9,12 @@ class AdsManager {
   static String? _openAdUnitID;
 
   static Future<void> initialize() async {
-    _bannerAdUnitId = await AdConfig.bannerAdUnitId;
-    _openAdUnitID = await AdConfig.openAdUnitId;
+    try {
+      _bannerAdUnitId = await AdConfig.bannerAdUnitId;
+      _openAdUnitID = await AdConfig.openAdUnitId;
+    } catch (e) {
+      debugPrint("AdsManager initialization failed: $e");
+    }
     debugPrint("AdsManager initialized: banner=$_bannerAdUnitId, open=$_openAdUnitID");
   }
 

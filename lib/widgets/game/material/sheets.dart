@@ -47,11 +47,13 @@ Widget createMoreBottomSheet(
 
                     return Semantics(
                       excludeSemantics: true,
-                      child: BoardWidget(
-                        board: Board.createNormal(size),
-                        onTap: null,
-                        showNumbers: false,
-                        size: puzzleSize,
+                      child: IgnorePointer(
+                        child: BoardWidget(
+                          board: Board.createNormal(size),
+                          onTap: null,
+                          showNumbers: false,
+                          size: puzzleSize,
+                        ),
                       ),
                     );
                   },

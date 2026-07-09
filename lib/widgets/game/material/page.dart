@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:classic_15_puzzle/config/ui.dart';
 import 'package:classic_15_puzzle/widgets/game/board.dart';
+import 'package:classic_15_puzzle/widgets/game/hall_of_fame.dart';
 import 'package:classic_15_puzzle/widgets/game/material/sheets.dart';
 import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
@@ -93,6 +94,16 @@ class GameMaterialPageState extends State<GameMaterialPage> {
       actions: [
         IconButton(
           onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => HallOfFameDialog(history: presenter.history),
+            );
+          },
+          icon: const Icon(Icons.emoji_events_rounded),
+          color: Colors.amber,
+        ),
+        IconButton(
+          onPressed: () {
             HapticFeedback.selectionClick();
             showModalBottomSheet<void>(
               context: context,
@@ -128,6 +139,14 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
+                  _ActionButton(
+                    icon: Icons.lightbulb_outline_rounded,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      presenter.hint();
+                    },
+                  ),
+                  const SizedBox(width: 12),
                   _ActionButton(
                     icon: Icons.refresh_rounded,
                     onPressed: () {
@@ -285,7 +304,6 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return IconButton.filledTonal(
       onPressed: onPressed,
       icon: Icon(icon, size: 28),

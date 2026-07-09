@@ -7,7 +7,7 @@ class AdConfig {
     try {
       final String? id = await _channel.invokeMethod('getAdBannerUnitId');
       return id;
-    } on PlatformException {
+    } catch (e) {
       return null;
     }
   }
@@ -16,7 +16,7 @@ class AdConfig {
     try {
       final String? id = await _channel.invokeMethod('getAdOpenUnitId');
       return id;
-    } on PlatformException {
+    } catch (e) {
       return null;
     }
   }
