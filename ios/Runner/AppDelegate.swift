@@ -24,6 +24,9 @@ import UIKit
           } else if call.method == "getAdOpenUnitId" {
             let openId = Bundle.main.object(forInfoDictionaryKey: "AdOpenUnitId") as? String
             result(openId)
+          } else if call.method == "getAdInterstitialUnitId" {
+            let interstitialId = Bundle.main.object(forInfoDictionaryKey: "AdInterstitialUnitId") as? String
+            result(interstitialId)
           } else {
             result(FlutterMethodNotImplemented)
           }

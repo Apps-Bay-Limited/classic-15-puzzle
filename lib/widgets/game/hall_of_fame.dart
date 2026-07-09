@@ -1,6 +1,9 @@
 import 'package:classic_15_puzzle/data/history.dart';
 import 'package:classic_15_puzzle/data/result.dart';
+import 'package:classic_15_puzzle/theme/app_spacing.dart';
+import 'package:classic_15_puzzle/theme/app_typography.dart';
 import 'package:classic_15_puzzle/widgets/game/format.dart';
+import 'package:classic_15_puzzle/widgets/shared/accent_stat_card.dart';
 import 'package:flutter/material.dart';
 
 class HallOfFameDialog extends StatelessWidget {
@@ -15,18 +18,18 @@ class HallOfFameDialog extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: AlertDialog(
-        title: const Text("Hall of Fame", style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text('Hall of Fame', style: AppTypography.dialogTitle(context)),
         contentPadding: EdgeInsets.zero,
         content: SizedBox(
           width: double.maxFinite,
-          height: 400,
+          height: AppSpacing.dialogContentHeight,
           child: Column(
             children: [
               TabBar(
                 tabs: const [
-                  Tab(text: "3x3"),
-                  Tab(text: "4x4"),
-                  Tab(text: "5x5"),
+                  Tab(text: '3x3'),
+                  Tab(text: '4x4'),
+                  Tab(text: '5x5'),
                 ],
                 labelColor: colorScheme.primary,
                 unselectedLabelColor: colorScheme.outline,
@@ -48,7 +51,7 @@ class HallOfFameDialog extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("CLOSE"),
+            child: const Text('CLOSE'),
           ),
         ],
       ),
@@ -74,92 +77,50 @@ class _SizeStats extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.history_rounded, size: 48, color: colorScheme.outline.withValues(alpha: 0.3)),
-            const SizedBox(height: 16),
-            Text("No games yet", style: TextStyle(color: colorScheme.outline)),
+            Icon(
+              Icons.history_rounded,
+              size: 48,
+              color: colorScheme.outline.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text('No games yet', style: TextStyle(color: colorScheme.outline)),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Solve a puzzle to see your records here',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       children: [
         Row(
           children: [
             Expanded(
-              child: _BestCard(
-                label: "BEST TIME",
-                value: bestTime != null ? formatElapsedTime(bestTime.time) : "--",
+              child: AccentStatCard.gold(
+                label: 'BEST TIME',
+                value: bestTime != null ? formatElapsedTime(bestTime.time) : '--',
                 icon: Icons.timer_rounded,
-                color: Colors.amber,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _BestCard(
-                label: "MIN MOVES",
-                value: bestMoves != null ? "${bestMoves.steps}" : "--",
+              child: AccentStatCard.slate(
+                label: 'MIN MOVES',
+                value: bestMoves != null ? '${bestMoves.steps}' : '--',
                 icon: Icons.bolt_rounded,
-                color: Colors.blueGrey,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        Text(
-          "RECENT LOG",
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w800,
-                color: colorScheme.outline,
-              ),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.lg),
+        Text('RECENT LOG', style: AppTypography.sectionHeader(context)),
+        const SizedBox(height: AppSpacing.xs),
         ...recent.map((result) => _LogItem(result: result)),
       ],
-    );
-  }
-}
-
-class _BestCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _BestCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: color),
-          ),
-          Text(
-            value,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colorScheme.onSurface),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -173,12 +134,16 @@ class _LogItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final date = DateTime.fromMillisecondsSinceEpoch(result.timestamp);
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -186,11 +151,15 @@ class _LogItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}",
-                style: TextStyle(fontSize: 12, color: colorScheme.outline, fontWeight: FontWeight.w600),
+                '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.outline,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
-                "${result.steps} moves",
+                '${result.steps} moves',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ],
@@ -198,7 +167,10 @@ class _LogItem extends StatelessWidget {
           const Spacer(),
           Text(
             formatElapsedTime(result.time),
-            style: TextStyle(fontWeight: FontWeight.w800, color: colorScheme.primary),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: colorScheme.primary,
+            ),
           ),
         ],
       ),

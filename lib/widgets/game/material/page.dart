@@ -2,9 +2,16 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:classic_15_puzzle/config/ui.dart';
-import 'package:classic_15_puzzle/widgets/game/board.dart';
-import 'package:classic_15_puzzle/widgets/game/hall_of_fame.dart';
+import 'package:classic_15_puzzle/theme/app_radii.dart';
+import 'package:classic_15_puzzle/theme/app_spacing.dart';
+import 'package:classic_15_puzzle/theme/app_typography.dart';
 import 'package:classic_15_puzzle/widgets/game/material/sheets.dart';
+import 'package:classic_15_puzzle/widgets/game/board.dart';
+import 'package:classic_15_puzzle/widgets/shared/ad_banner_slot.dart';
+import 'package:classic_15_puzzle/widgets/shared/action_button.dart';
+import 'package:classic_15_puzzle/widgets/shared/live_timer_text.dart';
+import 'package:classic_15_puzzle/widgets/shared/stat_card.dart';
+import 'package:classic_15_puzzle/widgets/game/hall_of_fame.dart';
 import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 import 'package:flutter/material.dart';
@@ -14,10 +21,6 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 class GameMaterialPage extends StatefulWidget {
   const GameMaterialPage({super.key});
 
-  static const kMaxBoardSize = 600.0;
-  static const kBoardMargin = 24.0;
-  static const kBoardPadding = 12.0;
-
   @override
   GameMaterialPageState createState() => GameMaterialPageState();
 }
@@ -26,6 +29,7 @@ class GameMaterialPageState extends State<GameMaterialPage> {
   final FocusNode _boardFocus = FocusNode();
   BannerAd? _ad;
   bool _isAdLoaded = false;
+  bool _adLoadFailed = false;
   bool _firstTime = true;
 
   @override
@@ -39,24 +43,32 @@ class GameMaterialPageState extends State<GameMaterialPage> {
         onAdLoaded: (_) {
           setState(() {
             _isAdLoaded = true;
+            _adLoadFailed = false;
           });
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
           debugPrint('Ad load failed (code=${error.code} message=${error.message})');
+          setState(() {
+            _isAdLoaded = false;
+            _adLoadFailed = true;
+          });
         },
       ),
     );
 
     _ad?.load();
 
-    AppOpenAdManager appOpenAdManager = AppOpenAdManager()..loadAd();
-    WidgetsBinding.instance.addObserver(AppLifecycleReactor(appOpenAdManager: appOpenAdManager));
+    final appOpenAdManager = AppOpenAdManager()..loadAd();
+    WidgetsBinding.instance.addObserver(
+      AppLifecycleReactor(appOpenAdManager: appOpenAdManager),
+    );
   }
 
   @override
   void dispose() {
     _ad?.dispose();
+    _boardFocus.dispose();
     super.dispose();
   }
 
@@ -76,13 +88,11 @@ class GameMaterialPageState extends State<GameMaterialPage> {
     }
 
     final appBar = AppBar(
-      title: const Text(
-        "Classic 15",
-        style: TextStyle(fontWeight: FontWeight.w700),
-      ),
+      title: Text('Classic 15', style: AppTypography.appBarTitle(context)),
       elevation: 0,
       centerTitle: isIOS,
-      backgroundColor: isIOS ? Colors.transparent : Theme.of(context).colorScheme.surface,
+      backgroundColor:
+          isIOS ? Colors.transparent : Theme.of(context).colorScheme.surface,
       flexibleSpace: isIOS
           ? ClipRect(
               child: BackdropFilter(
@@ -92,31 +102,41 @@ class GameMaterialPageState extends State<GameMaterialPage> {
             )
           : null,
       actions: [
-        IconButton(
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => HallOfFameDialog(history: presenter.history),
-            );
-          },
-          icon: const Icon(Icons.emoji_events_rounded),
-          color: Colors.amber,
+        Tooltip(
+          message: 'Hall of Fame',
+          child: IconButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) =>
+                    HallOfFameDialog(history: presenter.history),
+              );
+            },
+            icon: const Icon(Icons.emoji_events_rounded),
+            color: Theme.of(context).colorScheme.tertiary,
+          ),
         ),
-        IconButton(
-          onPressed: () {
-            HapticFeedback.selectionClick();
-            showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (BuildContext context) => createMoreBottomSheet(context, call: (size) {
-                presenter.resize(size);
-                presenter.play();
-              }),
-            );
-          },
-          icon: const Icon(Icons.tune_rounded),
-        )
+        Tooltip(
+          message: 'Settings',
+          child: IconButton(
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (BuildContext context) => createSettingsBottomSheet(
+                  context,
+                  onGridSizeSelected: (size) {
+                    presenter.resize(size);
+                    presenter.play();
+                  },
+                ),
+              );
+            },
+            icon: const Icon(Icons.tune_rounded),
+          ),
+        ),
       ],
     );
 
@@ -126,53 +146,69 @@ class GameMaterialPageState extends State<GameMaterialPage> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _StatCard(
-                      label: "MOVES",
-                      value: presenter.steps.toString(),
-                      icon: Icons.numbers_rounded,
-                    ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: StatCard(
+                          label: 'TIME',
+                          icon: Icons.timer_rounded,
+                          valueChild: LiveTimerText(
+                            getElapsedMs: () => presenter.elapsedMs,
+                            isRunning: presenter.isTimerTicking,
+                            style: AppTypography.statValue(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: StatCard(
+                          label: 'MOVES',
+                          value: presenter.steps.toString(),
+                          icon: Icons.numbers_rounded,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  _ActionButton(
-                    icon: Icons.lightbulb_outline_rounded,
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      presenter.hint();
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  _ActionButton(
-                    icon: Icons.refresh_rounded,
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      presenter.play();
-                    },
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      GameActionButton(
+                        icon: Icons.lightbulb_outline_rounded,
+                        tooltip: 'Hint',
+                        isLoading: presenter.isSolving,
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          presenter.hint();
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      GameActionButton(
+                        icon: Icons.refresh_rounded,
+                        tooltip: 'New game',
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          presenter.play();
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             Expanded(child: boardWidget),
-            const SizedBox(height: 16),
-            // Dedicated Ad Space
-            Container(
-              height: 60,
-              width: double.infinity,
-              alignment: Alignment.center,
-              child: _isAdLoaded && _ad != null
-                  ? AdWidget(ad: _ad!)
-                  : Text(
-                      "ADVERTISEMENT",
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-                          ),
-                    ),
+            const SizedBox(height: AppSpacing.md),
+            AdBannerSlot(
+              isLoaded: _isAdLoaded,
+              hasFailed: _adLoadFailed,
+              adWidget: _ad != null ? AdWidget(ad: _ad!) : null,
             ),
           ],
         ),
@@ -187,11 +223,11 @@ class GameMaterialPageState extends State<GameMaterialPage> {
 
     return Center(
       child: Container(
-        margin: const EdgeInsets.all(GameMaterialPage.kBoardMargin),
-        padding: const EdgeInsets.all(GameMaterialPage.kBoardPadding),
+        margin: const EdgeInsets.all(AppSpacing.boardMargin),
+        padding: const EdgeInsets.all(AppSpacing.boardPadding),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(24.0),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -204,7 +240,8 @@ class GameMaterialPageState extends State<GameMaterialPage> {
           builder: (BuildContext context, BoxConstraints constraints) {
             final puzzleSize = min(
               min(constraints.maxWidth, constraints.maxHeight),
-              GameMaterialPage.kMaxBoardSize - (GameMaterialPage.kBoardMargin + GameMaterialPage.kBoardPadding) * 2,
+              AppSpacing.maxBoardSize -
+                  (AppSpacing.boardMargin + AppSpacing.boardPadding) * 2,
             );
 
             return KeyboardListener(
@@ -226,13 +263,16 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                 }
 
                 final tapPoint = presenter.board.blank + Point(dx, dy);
-                if (tapPoint.x >= 0 && tapPoint.x < presenter.board.size &&
-                    tapPoint.y >= 0 && tapPoint.y < presenter.board.size) {
+                if (tapPoint.x >= 0 &&
+                    tapPoint.x < presenter.board.size &&
+                    tapPoint.y >= 0 &&
+                    tapPoint.y < presenter.board.size) {
                   presenter.tap(point: tapPoint);
                 }
               },
               child: BoardWidget(
-                isSpeedRunModeEnabled: config?.isSpeedRunModeEnabled ?? false,
+                isSpeedRunModeEnabled:
+                    config?.isSpeedRunModeEnabled ?? false,
                 board: presenter.board,
                 size: puzzleSize,
                 onTap: (point) => presenter.tap(point: point),
@@ -240,76 +280,6 @@ class GameMaterialPageState extends State<GameMaterialPage> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _StatCard({required this.label, required this.value, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isIOS ? colorScheme.surfaceContainer.withValues(alpha: 0.5) : colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(20),
-        border: isIOS ? Border.all(color: Colors.white.withValues(alpha: 0.1)) : null,
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: colorScheme.primary, size: 20),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                  color: colorScheme.outline,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _ActionButton({required this.icon, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 28),
-      padding: const EdgeInsets.all(16),
-      style: IconButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }

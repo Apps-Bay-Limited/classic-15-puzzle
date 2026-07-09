@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:classic_15_puzzle/config/ui.dart';
 import 'package:classic_15_puzzle/play_games.dart';
+import 'package:classic_15_puzzle/theme/app_theme.dart';
 import 'package:classic_15_puzzle/utils/platform.dart';
 import 'package:classic_15_puzzle/widgets/game/page.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
@@ -78,75 +79,30 @@ class _MyMaterialApp extends _MyPlatformApp {
   @override
   Widget build(BuildContext context) {
     final ui = ConfigUiContainer.of(context);
-    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
 
-    ThemeData applyDecor(ThemeData theme) {
-      return theme.copyWith(
-        dialogTheme: theme.dialogTheme.copyWith(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24.0),
-          ),
-          elevation: isIOS ? 0 : 6,
-        ),
-        cardTheme: theme.cardTheme.copyWith(
-          elevation: isIOS ? 0 : 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: isIOS ? 0 : 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.0),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-        ),
-        textTheme: theme.textTheme.apply(fontFamily: 'ManRope'),
-      );
-    }
+    final lightTheme = AppTheme.applyPlatformDecor(AppTheme.light(), isIOS: isIOS);
+    final darkTheme = AppTheme.applyPlatformDecor(AppTheme.dark(), isIOS: isIOS);
 
-    final baseDarkTheme = applyDecor(ThemeData(
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xffA2907D),
-        brightness: Brightness.dark,
-        surface: const Color(0xFF121212),
-      ),
-    ));
-
-    final baseLightTheme = applyDecor(ThemeData(
-      brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xffA2907D),
-        brightness: Brightness.light,
-        surface: const Color(0xFFFDFCFB),
-      ),
-    ));
-
-    ThemeData darkTheme;
-    ThemeData lightTheme;
-    if (ui?.useDarkTheme == true) {
-      darkTheme = baseDarkTheme;
-      lightTheme = baseDarkTheme;
+    final ThemeMode themeMode;
+    if (ui?.useDarkTheme == null) {
+      themeMode = ThemeMode.system;
     } else {
-      darkTheme = baseLightTheme;
-      lightTheme = baseLightTheme;
+      themeMode = ui!.useDarkTheme! ? ThemeMode.dark : ThemeMode.light;
     }
 
     return MaterialApp(
       title: title,
       debugShowCheckedModeBanner: false,
-      darkTheme: darkTheme,
       theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: themeMode,
       builder: (context, child) {
         return MediaQuery(
-          // Ensure accessibility font scaling is respected but doesn't break layout
           data: MediaQuery.of(context).copyWith(
             textScaler: MediaQuery.of(context).textScaler.clamp(
               minScaleFactor: 0.8,
-              maxScaleFactor: 1.4,
+              maxScaleFactor: 2.0,
             ),
           ),
           child: child!,
@@ -154,13 +110,12 @@ class _MyMaterialApp extends _MyPlatformApp {
       },
       home: Builder(
         builder: (context) {
-          bool useDarkTheme;
-          useDarkTheme = ui?.useDarkTheme ?? false;
-          final overlay = useDarkTheme ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark;
+          final brightness = Theme.of(context).brightness;
+          final overlay = brightness == Brightness.dark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark;
           SystemChrome.setSystemUIOverlayStyle(
-            overlay.copyWith(
-              statusBarColor: Colors.transparent,
-            ),
+            overlay.copyWith(statusBarColor: Colors.transparent),
           );
           return const GamePage();
         },
@@ -168,4 +123,3 @@ class _MyMaterialApp extends _MyPlatformApp {
     );
   }
 }
-

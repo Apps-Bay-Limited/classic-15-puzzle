@@ -30,6 +30,8 @@
 	<string>$(AD_BANNER_UNIT_ID)</string>
 	<key>AdOpenUnitId</key>
 	<string>$(AD_OPEN_UNIT_ID)</string>
+	<key>AdInterstitialUnitId</key>
+	<string>$(AD_INTERSTITIAL_UNIT_ID)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>

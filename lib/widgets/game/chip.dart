@@ -1,4 +1,7 @@
 import 'dart:ui';
+
+import 'package:classic_15_puzzle/theme/app_motion.dart';
+import 'package:classic_15_puzzle/theme/app_radii.dart';
 import 'package:flutter/material.dart' hide Chip;
 
 class ChipWidget extends StatefulWidget {
@@ -47,11 +50,24 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  void _onTapDown() {
+    if (!AppMotion.disableAnimations(context)) {
+      _controller.forward();
+    }
+  }
+
+  void _onTapEnd() {
+    if (!AppMotion.disableAnimations(context)) {
+      _controller.reverse();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCompact = widget.size < 150;
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-    final radius = isCompact ? 12.0 : 16.0;
+    final radius = isCompact ? AppRadii.xs : AppRadii.sm;
+    final tilePadding = isCompact ? 3.0 : 6.0;
 
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(radius)),
@@ -70,13 +86,13 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
       elevation: isIOS ? 0 : 2,
       child: InkWell(
         onTap: widget.onPressed,
-        onTapDown: (_) => _controller.forward(),
-        onTapUp: (_) => _controller.reverse(),
-        onTapCancel: () => _controller.reverse(),
+        onTapDown: (_) => _onTapDown(),
+        onTapUp: (_) => _onTapEnd(),
+        onTapCancel: _onTapEnd,
         borderRadius: BorderRadius.circular(radius),
         child: Center(
           child: Text(
-            widget.text ?? "",
+            widget.text ?? '',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: widget.fontSize,
@@ -107,14 +123,16 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
       );
     }
 
+    final child = AppMotion.disableAnimations(context)
+        ? content
+        : ScaleTransition(scale: _scaleAnimation, child: content);
+
     return Semantics(
-      label: widget.text != null ? "Tile ${widget.text}" : "Empty tile",
+      label: widget.text != null ? 'Tile ${widget.text}' : 'Empty tile',
+      button: widget.onPressed != null,
       child: Padding(
-        padding: EdgeInsets.all(isCompact ? 3.0 : 6.0),
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: content,
-        ),
+        padding: EdgeInsets.all(tilePadding),
+        child: child,
       ),
     );
   }

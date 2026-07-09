@@ -65,6 +65,7 @@ android {
             manifestPlaceholders["AdMobAppId"] = appId
             buildConfigField("String", "AD_BANNER_UNIT_ID", "\"${admobProperties.getProperty("AdBannerUnitId") ?: ""}\"")
             buildConfigField("String", "AD_OPEN_UNIT_ID", "\"${admobProperties.getProperty("AdOpenUnitId") ?: ""}\"")
+            buildConfigField("String", "AD_INTERSTITIAL_UNIT_ID", "\"${admobProperties.getProperty("AdInterstitialUnitId") ?: ""}\"")
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
@@ -72,6 +73,7 @@ android {
             manifestPlaceholders["AdMobAppId"] = "ca-app-pub-3940256099942544~3347511713"
             buildConfigField("String", "AD_BANNER_UNIT_ID", "\"ca-app-pub-3940256099942544/6300978111\"")
             buildConfigField("String", "AD_OPEN_UNIT_ID", "\"ca-app-pub-3940256099942544/3419835294\"")
+            buildConfigField("String", "AD_INTERSTITIAL_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
         }
     }
 }

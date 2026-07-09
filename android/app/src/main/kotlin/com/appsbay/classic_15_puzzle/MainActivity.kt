@@ -13,6 +13,7 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "getAdBannerUnitId" -> result.success(BuildConfig.AD_BANNER_UNIT_ID)
                 "getAdOpenUnitId" -> result.success(BuildConfig.AD_OPEN_UNIT_ID)
+                "getAdInterstitialUnitId" -> result.success(BuildConfig.AD_INTERSTITIAL_UNIT_ID)
                 else -> result.notImplemented()
             }
         }

@@ -9,7 +9,9 @@ import 'package:classic_15_puzzle/data/result.dart';
 import 'package:classic_15_puzzle/domain/game.dart';
 import 'package:classic_15_puzzle/utils/serializable.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 
 class GamePresenterWidget extends StatefulWidget {
   static const supportedSizes = [3, 4, 5];
@@ -56,6 +58,22 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
   int time = timeStopped;
 
+  bool _gameActive = false;
+
+  int _pausedMs = 0;
+
+  int? _pauseStartedAt;
+
+  bool _isSolving = false;
+
+  int _tipTapCount = 0;
+
+  final InterstitialAdManager _interstitialAdManager = InterstitialAdManager();
+
+  bool get isSolving => _isSolving;
+
+  static const hintPauseDuration = Duration(milliseconds: 500);
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +81,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
     board = _createBoard(4);
     history = GameHistory.empty();
+    _interstitialAdManager.loadAd();
 
     _loadState();
   }
@@ -123,6 +142,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       this.steps = steps ?? 0;
       this.board = board ?? _createBoard(4);
       this.history = history ?? GameHistory.empty();
+      _gameActive = (this.time != timeStopped) || (this.steps > 0);
     });
   }
 
@@ -137,11 +157,12 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   }
 
   void play() {
-
-    final now = DateTime.now().millisecondsSinceEpoch;
     setState(() {
-      time = now;
+      time = timeStopped;
       steps = 0;
+      _pausedMs = 0;
+      _pauseStartedAt = null;
+      _gameActive = true;
       board =
           game.shuffle(game.hardest(board), amount: board.size * board.size);
     });
@@ -151,15 +172,36 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     setState(() {
       time = timeStopped;
       steps = 0;
+      _gameActive = false;
+      _pausedMs = 0;
+      _pauseStartedAt = null;
     });
   }
 
   bool isPlaying() => time != timeStopped;
 
+  bool get isGameActive => _gameActive;
+
+  int get elapsedMs {
+    if (time == timeStopped) return 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    var paused = _pausedMs;
+    if (_pauseStartedAt != null) {
+      paused += now - _pauseStartedAt!;
+    }
+    return max(0, now - time - paused);
+  }
+
+  bool get isTimerTicking =>
+      isPlaying() || _pauseStartedAt != null;
+
   void resize(int size) {
     setState(() {
       time = timeStopped;
       steps = 0;
+      _pausedMs = 0;
+      _pauseStartedAt = null;
+      _gameActive = false;
       board = _createBoard(size);
     });
   }
@@ -171,21 +213,21 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     if (prevBoard == nextBoard) return;
 
     setState(() {
+      if (_gameActive && !isPlaying()) {
+        time = DateTime.now().millisecondsSinceEpoch;
+      }
+
       board = nextBoard;
 
-      if (isPlaying()) {
-        // Increment the amount of steps.
+      if (_gameActive) {
         steps = steps + 1;
 
-        // Stop if a user has solved the
-        // board.
         if (board.isSolved()) {
-          final now = DateTime.now().millisecondsSinceEpoch;
           final result = Result(
             steps: steps,
-            time: now - time,
+            time: elapsedMs,
             size: board.size,
-            timestamp: now,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
           );
 
           history.addResult(result);
@@ -197,35 +239,106 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     });
   }
 
-  void hint() {
-    if (!isPlaying()) return;
-    final nextMove = PuzzleSolver.findNextMove(board);
-    if (nextMove != null) {
-      tap(point: nextMove);
+  Future<void> hint() async {
+    if (!_gameActive || board.isSolved() || _isSolving) return;
+
+    setState(() {
+      _isSolving = true;
+    });
+
+    try {
+      _tipTapCount++;
+
+      final nextMove = await compute(PuzzleSolver.findNextMove, board);
+      if (nextMove == null) {
+        if (mounted) {
+          setState(() {
+            _isSolving = false;
+          });
+        }
+        return;
+      }
+
+      if (_tipTapCount > 0 && _tipTapCount % 5 == 0) {
+        final wasPlaying = isPlaying();
+        if (wasPlaying) {
+          _pauseStartedAt = DateTime.now().millisecondsSinceEpoch;
+          setState(() {});
+        }
+
+        _interstitialAdManager.showAdIfAvailable(
+          onAdClosed: () async {
+            if (wasPlaying && _pauseStartedAt != null) {
+              _pausedMs += DateTime.now().millisecondsSinceEpoch - _pauseStartedAt!;
+              _pauseStartedAt = null;
+            }
+
+            if (isPlaying()) {
+              await _pauseTimerFor(hintPauseDuration);
+            }
+
+            if (mounted) {
+              tap(point: nextMove);
+              setState(() {
+                _isSolving = false;
+              });
+            }
+          },
+        );
+      } else {
+        if (isPlaying()) {
+          await _pauseTimerFor(hintPauseDuration);
+        }
+
+        if (mounted) {
+          tap(point: nextMove);
+          setState(() {
+            _isSolving = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error computing hint: $e");
+      if (mounted) {
+        setState(() {
+          _isSolving = false;
+        });
+      }
     }
+  }
+
+  Future<void> _pauseTimerFor(Duration duration) async {
+    if (!isPlaying()) return;
+
+    _pauseStartedAt = DateTime.now().millisecondsSinceEpoch;
+    setState(() {});
+
+    await Future<void>.delayed(duration);
+
+    if (!mounted) return;
+
+    _pausedMs += DateTime.now().millisecondsSinceEpoch - _pauseStartedAt!;
+    _pauseStartedAt = null;
+    setState(() {});
   }
 
   /// Resets the board, keeping the `isPlaying` state
   /// the same.
   void reset() {
     setState(() {
-      int timeFuture;
-      if (isPlaying()) {
-        final now = DateTime.now().millisecondsSinceEpoch;
-        timeFuture = now;
-      } else {
-        timeFuture = timeStopped;
-      }
+      final keepActive = _gameActive;
+      time = timeStopped;
+      _pausedMs = 0;
+      _pauseStartedAt = null;
 
       Board boardFuture;
-      if (isPlaying()) {
+      if (keepActive) {
         boardFuture =
             game.shuffle(game.hardest(board), amount: board.size * board.size);
       } else {
         boardFuture = _createBoard(board.size);
       }
 
-      time = timeFuture;
       steps = 0;
       board = boardFuture;
     });
@@ -254,8 +367,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
     // Write the delta of time, so user can not close the app, change
     // time and go back so easily.
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final elapsedTime = now - time;
+    final elapsedTime = elapsedMs;
 
     serializer.writeInt(elapsedTime);
     serializer.writeInt(time);

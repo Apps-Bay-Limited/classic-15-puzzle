@@ -20,4 +20,13 @@ class AdConfig {
       return null;
     }
   }
+
+  static Future<String?> get interstitialAdUnitId async {
+    try {
+      final String? id = await _channel.invokeMethod('getAdInterstitialUnitId');
+      return id;
+    } catch (e) {
+      return null;
+    }
+  }
 }

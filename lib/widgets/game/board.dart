@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:classic_15_puzzle/data/board.dart';
 import 'package:classic_15_puzzle/data/chip.dart';
 import 'package:classic_15_puzzle/domain/game.dart';
+import 'package:classic_15_puzzle/theme/app_colors.dart';
+import 'package:classic_15_puzzle/theme/app_motion.dart';
 import 'package:classic_15_puzzle/widgets/game/chip.dart';
 import 'package:flutter/material.dart' hide Chip;
 import 'package:flutter/services.dart';
@@ -46,8 +48,8 @@ class BoardWidgetState extends State<BoardWidget>
 
   static const double _initialVelocityPenetration = 3.065;
 
-  static const Color rightColor = Color(0xffF4B17E);
-  static const Color rightFontColor = Color(0xff786D64);
+  static const Color rightColor = AppColors.tileFill;
+  static const Color rightFontColor = AppColors.tileText;
 
   static double _decelerationForFriction(double friction) {
     return friction * 61774.04968;
@@ -76,7 +78,14 @@ class BoardWidgetState extends State<BoardWidget>
 
   bool _isSpeedRunModeEnabled = false;
 
-  /// Applies normal/speed run duration modifiers */
+  /// Applies normal/speed run duration modifiers and respects Reduce Motion.
+  int _animDurationMs(int duration) {
+    if (AppMotion.disableAnimations(context)) {
+      return 0;
+    }
+    return _applyAnimationMultiplier(duration);
+  }
+
   int _applyAnimationMultiplier(int duration) {
     if (_isSpeedRunModeEnabled) {
       return (duration.toDouble() * _animDurationMultiplierSpeedRun)
@@ -166,7 +175,7 @@ class BoardWidgetState extends State<BoardWidget>
   void _startMoveAnimation(Chip chip, Point<int> point) {
     final controller = AnimationController(
       duration: Duration(
-          milliseconds: _applyAnimationMultiplier(_animDurationMove)),
+          milliseconds: _animDurationMs(_animDurationMove)),
       vsync: this,
     );
 
@@ -203,7 +212,7 @@ class BoardWidgetState extends State<BoardWidget>
 
   void _startBlinkAnimation(Chip chip, Point<int> point) {
     final duration = Duration(
-        milliseconds: _applyAnimationMultiplier(_animDurationBlinkHalf) * 2);
+        milliseconds: _animDurationMs(_animDurationBlinkHalf) * 2);
     const curve = Curves.easeInOut;
 
     void startScaleAnimation(Chip chip, Point<int> point) {
@@ -272,7 +281,7 @@ class BoardWidgetState extends State<BoardWidget>
     final controller = AnimationController(
       duration: Duration(
           milliseconds:
-              _applyAnimationMultiplier(_animDurationColorOverlay)),
+              _animDurationMs(_animDurationColorOverlay)),
       vsync: this,
     );
 
@@ -322,11 +331,8 @@ class BoardWidgetState extends State<BoardWidget>
       y: board.blank.y.toDouble() / board.size.toDouble(),
       scale: 1.0,
       chip: (chipSize) => Semantics(
-        label: "",
-        child: const Text(
-          "Blank space",
-          style: TextStyle(color: Colors.transparent),
-        ),
+        label: 'Blank space',
+        child: const SizedBox.shrink(),
       ),
     );
     final chipsWidgets = board.chips.map(_buildChipWidget).toList();

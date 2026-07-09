@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -7,15 +8,17 @@ class AdsManager {
   static bool disableAllAdsForScreenshot = false;
   static String? _bannerAdUnitId;
   static String? _openAdUnitID;
+  static String? _interstitialAdUnitId;
 
   static Future<void> initialize() async {
     try {
       _bannerAdUnitId = await AdConfig.bannerAdUnitId;
       _openAdUnitID = await AdConfig.openAdUnitId;
+      _interstitialAdUnitId = await AdConfig.interstitialAdUnitId;
     } catch (e) {
       debugPrint("AdsManager initialization failed: $e");
     }
-    debugPrint("AdsManager initialized: banner=$_bannerAdUnitId, open=$_openAdUnitID");
+    debugPrint("AdsManager initialized: banner=$_bannerAdUnitId, open=$_openAdUnitID, interstitial=$_interstitialAdUnitId");
   }
 
   static String get bannerAdUnitId {
@@ -28,9 +31,23 @@ class AdsManager {
     return _openAdUnitID ?? "";
   }
 
+  static String get interstitialAdUnitId {
+    if (disableAllAdsForScreenshot) return "";
+    if (_interstitialAdUnitId != null && _interstitialAdUnitId!.isNotEmpty) {
+      return _interstitialAdUnitId!;
+    }
+    if (Platform.isAndroid) {
+      return "ca-app-pub-3940256099942544/1033173712";
+    } else if (Platform.isIOS) {
+      return "ca-app-pub-3940256099942544/4411468910";
+    }
+    return "";
+  }
+
   static void debugPrintID() {
     debugPrint("bannerAdUnitId: ${AdsManager.bannerAdUnitId}");
     debugPrint("openAdUnitID: ${AdsManager.openAdUnitID}");
+    debugPrint("interstitialAdUnitId: ${AdsManager.interstitialAdUnitId}");
   }
 }
 
@@ -130,5 +147,79 @@ class AppLifecycleReactor extends WidgetsBindingObserver {
       appOpenAdManager.showAdIfAvailable();
       hasEnterBackground = false;
     }
+  }
+}
+
+class InterstitialAdManager {
+  InterstitialAd? _interstitialAd;
+  bool _isShowingAd = false;
+  bool _isLoading = false;
+
+  void loadAd() {
+    if (_isLoading || _interstitialAd != null) return;
+    _isLoading = true;
+
+    final adUnitId = AdsManager.interstitialAdUnitId;
+    if (adUnitId.isEmpty) {
+      _isLoading = false;
+      return;
+    }
+
+    InterstitialAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          debugPrint('InterstitialAd loaded');
+          _interstitialAd = ad;
+          _isLoading = false;
+        },
+        onAdFailedToLoad: (error) {
+          debugPrint('InterstitialAd failed to load: $error');
+          _interstitialAd = null;
+          _isLoading = false;
+        },
+      ),
+    );
+  }
+
+  bool get isAdAvailable => _interstitialAd != null;
+
+  void showAdIfAvailable({VoidCallback? onAdClosed}) {
+    if (!isAdAvailable) {
+      debugPrint('Tried to show interstitial ad before available.');
+      loadAd();
+      onAdClosed?.call();
+      return;
+    }
+    if (_isShowingAd) {
+      debugPrint('Tried to show interstitial ad while already showing an ad.');
+      onAdClosed?.call();
+      return;
+    }
+
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        _isShowingAd = true;
+        debugPrint('$ad onAdShowedFullScreenContent');
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        debugPrint('$ad onAdFailedToShowFullScreenContent: $error');
+        _isShowingAd = false;
+        ad.dispose();
+        _interstitialAd = null;
+        loadAd();
+        onAdClosed?.call();
+      },
+      onAdDismissedFullScreenContent: (ad) {
+        debugPrint('$ad onAdDismissedFullScreenContent');
+        _isShowingAd = false;
+        ad.dispose();
+        _interstitialAd = null;
+        loadAd();
+        onAdClosed?.call();
+      },
+    );
+    _interstitialAd!.show();
   }
 }
