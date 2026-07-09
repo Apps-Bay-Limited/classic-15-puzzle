@@ -50,3 +50,7 @@ app.*.map.json
 classic_15_puzzle.sketch
 lib/secrets.dart
 ios/Secrets.xcconfig
+
+# Antigravity IDE generated
+.artifacts/
+.grok/
