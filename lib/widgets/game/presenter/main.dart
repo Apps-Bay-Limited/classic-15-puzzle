@@ -12,6 +12,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
+import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
 
 class GamePresenterWidget extends StatefulWidget {
   static const supportedSizes = [3, 4, 5];
@@ -70,6 +71,9 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
   final InterstitialAdManager _interstitialAdManager = InterstitialAdManager();
 
+  bool? _lastKnownAdsRemoved;
+  bool _isAdsRemoved = false;
+
   bool get isSolving => _isSolving;
 
   static const hintPauseDuration = Duration(milliseconds: 500);
@@ -81,9 +85,24 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
     board = _createBoard(4);
     history = GameHistory.empty();
-    _interstitialAdManager.loadAd();
 
     _loadState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isAdsRemoved =
+        PurchaseContainer.of(context)?.isAdsRemoved ?? false;
+    if (_lastKnownAdsRemoved == isAdsRemoved) return;
+    _lastKnownAdsRemoved = isAdsRemoved;
+    _isAdsRemoved = isAdsRemoved;
+
+    if (isAdsRemoved) {
+      _interstitialAdManager.dispose();
+    } else {
+      _interstitialAdManager.loadAd();
+    }
   }
 
   void _loadState() async {
@@ -259,7 +278,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
         return;
       }
 
-      if (_tipTapCount > 0 && _tipTapCount % 5 == 0) {
+      if (!_isAdsRemoved && _tipTapCount > 0 && _tipTapCount % 5 == 0) {
         final wasPlaying = isPlaying();
         if (wasPlaying) {
           _pauseStartedAt = DateTime.now().millisecondsSinceEpoch;

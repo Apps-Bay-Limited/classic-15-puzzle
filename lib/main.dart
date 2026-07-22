@@ -8,6 +8,8 @@ import 'package:classic_15_puzzle/utils/platform.dart';
 import 'package:classic_15_puzzle/widgets/game/page.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/in_app_reviewer_helper.dart';
+import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
+import 'package:classic_15_puzzle/widgets/util/purchase_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,22 +20,31 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  await AdsManager.initialize();
-  MobileAds.instance.initialize();
+  // Fast local read so a purchased user's cold start never spins up the ads
+  // SDK in the first place. The real entitlement is reconciled with the
+  // store shortly after, once PurchaseContainer mounts.
+  final adsRemoved = await readCachedAdsRemoved();
 
-  Future.delayed(const Duration(seconds: 1), () {
-    AppTrackingTransparency.requestTrackingAuthorization();
-  });
+  if (!adsRemoved) {
+    await AdsManager.initialize();
+    MobileAds.instance.initialize();
 
-  AdsManager.debugPrintID();
+    Future.delayed(const Duration(seconds: 1), () {
+      AppTrackingTransparency.requestTrackingAuthorization();
+    });
+
+    AdsManager.debugPrintID();
+  }
 
   InAppReviewHelper.checkAndAskForReview();
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_) {
     runApp(
-      const PlayGamesContainer(
-        child: ConfigUiContainer(
-          child: MyApp(),
+      const PurchaseContainer(
+        child: PlayGamesContainer(
+          child: ConfigUiContainer(
+            child: MyApp(),
+          ),
         ),
       ),
     );

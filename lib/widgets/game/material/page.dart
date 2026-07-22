@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -14,6 +15,8 @@ import 'package:classic_15_puzzle/widgets/shared/stat_card.dart';
 import 'package:classic_15_puzzle/widgets/game/hall_of_fame.dart';
 import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
+import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
+import 'package:classic_15_puzzle/widgets/util/purchase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -32,27 +35,87 @@ class GameMaterialPageState extends State<GameMaterialPage> {
   bool _adLoadFailed = false;
   bool _firstTime = true;
 
+  bool? _lastKnownAdsRemoved;
+  bool _isAdsRemoved = false;
+  AppLifecycleReactor? _appLifecycleReactor;
+  AppOpenAdManager? _appOpenAdManager;
+  StreamSubscription<PurchaseFeedback>? _purchaseFeedbackSubscription;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final purchase = PurchaseContainer.of(context);
+    final isAdsRemoved = purchase?.isAdsRemoved ?? false;
+
+    _purchaseFeedbackSubscription ??=
+        purchase?.feedback.listen(_showPurchaseFeedback);
+
+    if (_lastKnownAdsRemoved == isAdsRemoved) return;
+    _lastKnownAdsRemoved = isAdsRemoved;
+    _isAdsRemoved = isAdsRemoved;
+
+    if (isAdsRemoved) {
+      _disposeAds();
+    } else {
+      _initAds();
+    }
+  }
+
+  void _showPurchaseFeedback(PurchaseFeedback feedback) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(_purchaseFeedbackMessage(feedback))));
+  }
+
+  String _purchaseFeedbackMessage(PurchaseFeedback feedback) {
+    switch (feedback) {
+      case PurchaseFeedback.storeUnavailable:
+        return 'The App Store is unavailable right now. Please try again later.';
+      case PurchaseFeedback.productUnavailable:
+        return 'Remove Ads is not available right now. Please try again later.';
+      case PurchaseFeedback.purchasePending:
+        return 'Your purchase is pending approval.';
+      case PurchaseFeedback.purchaseCancelled:
+        return 'Purchase cancelled.';
+      case PurchaseFeedback.purchaseFailed:
+        return 'Purchase failed. Please try again.';
+      case PurchaseFeedback.purchaseSuccess:
+        return 'Ads removed. Thank you for your support!';
+      case PurchaseFeedback.alreadyOwned:
+        return 'You already own Remove Ads.';
+      case PurchaseFeedback.restoreSuccess:
+        return 'Purchase restored. Ads removed.';
+      case PurchaseFeedback.restoreEmpty:
+        return 'No previous purchase found to restore.';
+      case PurchaseFeedback.restoreFailed:
+        return 'Restore failed. Please try again.';
+    }
+  }
+
+  void _initAds() {
     _ad = BannerAd(
       adUnitId: AdsManager.bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (_) {
-          setState(() {
-            _isAdLoaded = true;
-            _adLoadFailed = false;
-          });
+          if (mounted) {
+            setState(() {
+              _isAdLoaded = true;
+              _adLoadFailed = false;
+            });
+          }
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
           debugPrint('Ad load failed (code=${error.code} message=${error.message})');
-          setState(() {
-            _isAdLoaded = false;
-            _adLoadFailed = true;
-          });
+          if (mounted) {
+            setState(() {
+              _isAdLoaded = false;
+              _adLoadFailed = true;
+            });
+          }
         },
       ),
     );
@@ -60,13 +123,38 @@ class GameMaterialPageState extends State<GameMaterialPage> {
     _ad?.load();
 
     final appOpenAdManager = AppOpenAdManager()..loadAd();
-    WidgetsBinding.instance.addObserver(
-      AppLifecycleReactor(appOpenAdManager: appOpenAdManager),
+    _appOpenAdManager = appOpenAdManager;
+    final reactor = AppLifecycleReactor(
+      appOpenAdManager: appOpenAdManager,
+      isPurchaseInProgress: () =>
+          PurchaseContainer.of(context)?.isPurchasePending ?? false,
     );
+    _appLifecycleReactor = reactor;
+    WidgetsBinding.instance.addObserver(reactor);
+  }
+
+  /// Disposes already-loaded ads immediately, e.g. when the entitlement
+  /// activates mid-session (fresh purchase or store reconciliation).
+  void _disposeAds() {
+    if (_appLifecycleReactor != null) {
+      WidgetsBinding.instance.removeObserver(_appLifecycleReactor!);
+      _appLifecycleReactor = null;
+    }
+    _appOpenAdManager?.dispose();
+    _appOpenAdManager = null;
+    _ad?.dispose();
+    _ad = null;
+    _isAdLoaded = false;
+    _adLoadFailed = false;
   }
 
   @override
   void dispose() {
+    _purchaseFeedbackSubscription?.cancel();
+    if (_appLifecycleReactor != null) {
+      WidgetsBinding.instance.removeObserver(_appLifecycleReactor!);
+    }
+    _appOpenAdManager?.dispose();
     _ad?.dispose();
     _boardFocus.dispose();
     super.dispose();
@@ -204,12 +292,14 @@ class GameMaterialPageState extends State<GameMaterialPage> {
             ),
             const SizedBox(height: AppSpacing.lg),
             Expanded(child: boardWidget),
-            const SizedBox(height: AppSpacing.md),
-            AdBannerSlot(
-              isLoaded: _isAdLoaded,
-              hasFailed: _adLoadFailed,
-              adWidget: _ad != null ? AdWidget(ad: _ad!) : null,
-            ),
+            if (!_isAdsRemoved) ...[
+              const SizedBox(height: AppSpacing.md),
+              AdBannerSlot(
+                isLoaded: _isAdLoaded,
+                hasFailed: _adLoadFailed,
+                adWidget: _ad != null ? AdWidget(ad: _ad!) : null,
+              ),
+            ],
           ],
         ),
       ),

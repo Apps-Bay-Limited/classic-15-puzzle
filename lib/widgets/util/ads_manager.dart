@@ -85,6 +85,14 @@ class AppOpenAdManager {
     return _appOpenAd != null;
   }
 
+  /// Disposes an already-loaded ad, e.g. when the ads-removed entitlement
+  /// activates mid-session.
+  void dispose() {
+    _appOpenAd?.dispose();
+    _appOpenAd = null;
+    _appOpenLoadTime = null;
+  }
+
   void showAdIfAvailable() {
     if (!isAdAvailable) {
       debugPrint('Tried to show ad before available.');
@@ -131,9 +139,16 @@ class AppOpenAdManager {
 class AppLifecycleReactor extends WidgetsBindingObserver {
   final AppOpenAdManager appOpenAdManager;
 
+  /// Consulted before showing an app open ad; return `true` while a
+  /// purchase is in progress so we don't interrupt it with a full-screen ad.
+  final bool Function()? isPurchaseInProgress;
+
   bool hasEnterBackground = false;
 
-  AppLifecycleReactor({required this.appOpenAdManager});
+  AppLifecycleReactor({
+    required this.appOpenAdManager,
+    this.isPurchaseInProgress,
+  });
 
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
@@ -144,8 +159,9 @@ class AppLifecycleReactor extends WidgetsBindingObserver {
       hasEnterBackground = true;
     }
     if (state == AppLifecycleState.resumed && hasEnterBackground) {
-      appOpenAdManager.showAdIfAvailable();
       hasEnterBackground = false;
+      if (isPurchaseInProgress?.call() ?? false) return;
+      appOpenAdManager.showAdIfAvailable();
     }
   }
 }
@@ -184,6 +200,13 @@ class InterstitialAdManager {
   }
 
   bool get isAdAvailable => _interstitialAd != null;
+
+  /// Disposes an already-loaded ad, e.g. when the ads-removed entitlement
+  /// activates mid-session.
+  void dispose() {
+    _interstitialAd?.dispose();
+    _interstitialAd = null;
+  }
 
   void showAdIfAvailable({VoidCallback? onAdClosed}) {
     if (!isAdAvailable) {
