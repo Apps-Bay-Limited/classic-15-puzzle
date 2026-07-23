@@ -115,8 +115,74 @@
 
   "timeLabel": "TIME",
   "movesLabel": "MOVES",
+
+  "noRecordYetLabel": "No record yet — finish to set one",
+
+  "dailyChallengeTitle": "Daily Challenge",
+  "dailyChallengeDoneToday": "Solved today ✓",
+  "dailyChallengeStartButton": "START",
+  "dailyChallengeReplayButton": "PLAY AGAIN",
+
+  "dailyChallengeDescription": "Every player gets the same {size}x{size} board today. Starting it replaces your current game.",
+  "@dailyChallengeDescription": {
+    "placeholders": {
+      "size": {"type": "int"}
+    }
+  },
+
+  "dailyStreakLabel": "Streak: {streak} · Best: {best}",
+  "@dailyStreakLabel": {
+    "placeholders": {
+      "streak": {"type": "int"},
+      "best": {"type": "int"}
+    }
+  },
+
+
+  "personalBestLabel": "Best {time}",
+  "@personalBestLabel": {
+    "description": "Shows the personal best time to beat for this grid size.",
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "aheadOfBestLabel": "{time} ahead of best",
+  "@aheadOfBestLabel": {
+    "description": "How much margin is left before the personal best is passed.",
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "behindBestLabel": "{time} behind best",
+  "@behindBestLabel": {
+    "description": "How far past the personal best the current run is.",
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
   "hintTooltip": "Hint",
   "undoTooltip": "Undo",
+
+  "outOfHintsTitle": "Out of hints",
+  "watchAdButton": "WATCH AD",
+
+  "outOfHintsMessage": "You've used all your hints for this puzzle. Watch a short ad to get {count} more.",
+  "@outOfHintsMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "hintsRefilledMessage": "{count} hints added.",
+  "@hintsRefilledMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
   "pauseTooltip": "Pause",
   "resumeTooltip": "Resume",
   "pausedTapToResumeLabel": "Paused — tap to resume",

@@ -13,10 +13,12 @@ import 'package:classic_15_puzzle/widgets/game/board.dart';
 import 'package:classic_15_puzzle/widgets/shared/ad_banner_slot.dart';
 import 'package:classic_15_puzzle/widgets/shared/action_button.dart';
 import 'package:classic_15_puzzle/widgets/shared/live_timer_text.dart';
+import 'package:classic_15_puzzle/widgets/shared/pb_pace_text.dart';
 import 'package:classic_15_puzzle/widgets/shared/stat_card.dart';
 import 'package:classic_15_puzzle/widgets/game/hall_of_fame.dart';
 import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
+import 'package:classic_15_puzzle/widgets/util/daily_challenge_container.dart';
 import 'package:classic_15_puzzle/widgets/onboarding/tutorial_dialog.dart';
 import 'package:classic_15_puzzle/widgets/util/photo_theme_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
@@ -49,6 +51,12 @@ class GameMaterialPageState extends State<GameMaterialPage> {
 
   ui.Image? _photoImage;
   String? _decodedPhotoFilename;
+
+  /// Rewarded ad backing the "out of hints" refill. Separate from the one
+  /// [ThemeUnlockContainer] owns — both are opt-in, so both are offered
+  /// regardless of the Remove Ads entitlement.
+  final RewardedAdSource _hintAdSource = RewardedAdManager();
+  bool _isShowingHintAd = false;
 
   @override
   void didChangeDependencies() {
@@ -169,6 +177,120 @@ class GameMaterialPageState extends State<GameMaterialPage> {
     }
   }
 
+  /// Confirms before starting today's challenge, since doing so replaces any
+  /// game currently in progress.
+  Future<void> _startDailyChallenge(
+      GamePresenterWidgetState presenter) async {
+    final l10n = AppLocalizations.of(context)!;
+    final daily = DailyChallengeContainer.of(context);
+    if (daily == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.dailyChallengeTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.dailyChallengeDescription(dailyChallengeBoardSize)),
+            const SizedBox(height: AppSpacing.md),
+            if (daily.isCompletedToday)
+              Text(
+                l10n.dailyChallengeDoneToday,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            Text(
+              l10n.dailyStreakLabel(daily.streak, daily.bestStreak),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.close),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              daily.isCompletedToday
+                  ? l10n.dailyChallengeReplayButton
+                  : l10n.dailyChallengeStartButton,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    HapticFeedback.mediumImpact();
+    presenter.playDaily(
+      seed: daily.todaySeed,
+      size: dailyChallengeBoardSize,
+    );
+  }
+
+  /// Offers a rewarded ad when the hint budget runs out. Declining just
+  /// closes the dialog — the player can keep solving unaided.
+  Future<void> _promptHintRefill(GamePresenterWidgetState presenter) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_isShowingHintAd) return;
+
+    if (!_hintAdSource.isAdAvailable) {
+      _hintAdSource.loadAd();
+      _showSnackBarMessage(l10n.rewardedAdUnavailableMessage);
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.outOfHintsTitle),
+        content: Text(l10n.outOfHintsMessage(GamePresenterWidgetState.hintsPerGame)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.close),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.watchAdButton),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isShowingHintAd = true);
+    var earnedReward = false;
+
+    _hintAdSource.showAdIfAvailable(
+      onUserEarnedReward: () {
+        earnedReward = true;
+      },
+      onAdClosed: () {
+        if (!mounted) return;
+        setState(() => _isShowingHintAd = false);
+        if (earnedReward) {
+          presenter.grantHints(GamePresenterWidgetState.hintsPerGame);
+          _showSnackBarMessage(
+            l10n.hintsRefilledMessage(GamePresenterWidgetState.hintsPerGame),
+          );
+        } else {
+          _showSnackBarMessage(l10n.rewardedAdDismissedMessage);
+        }
+      },
+    );
+  }
+
   void _initAds() {
     _ad = BannerAd(
       adUnitId: AdsManager.bannerAdUnitId,
@@ -226,7 +348,15 @@ class GameMaterialPageState extends State<GameMaterialPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _hintAdSource.loadAd();
+  }
+
+  @override
   void dispose() {
+    _hintAdSource.dispose();
+    _themeUnlockFeedbackSubscription?.cancel();
     _purchaseFeedbackSubscription?.cancel();
     if (_appLifecycleReactor != null) {
       WidgetsBinding.instance.removeObserver(_appLifecycleReactor!);
@@ -305,6 +435,9 @@ class GameMaterialPageState extends State<GameMaterialPage> {
             )
           : null,
       actions: [
+        _DailyChallengeAction(
+          onStart: () => _startDailyChallenge(presenter),
+        ),
         Tooltip(
           message: l10n.hallOfFameTitle,
           child: IconButton(
@@ -377,6 +510,13 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.xs),
+                  PbPaceText(
+                    personalBestMs:
+                        presenter.history.bestTime[presenter.board.size]?.time,
+                    getElapsedMs: () => presenter.elapsedMs,
+                    isRunning: presenter.isTimerTicking,
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -387,13 +527,22 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                       if (presenter.board.size == 3) ...[
                         GameActionButton(
                           icon: Icons.lightbulb_outline_rounded,
-                          tooltip: l10n.hintTooltip,
+                          tooltip: presenter.hintsRemaining > 0
+                              ? l10n.hintTooltip
+                              : l10n.outOfHintsTitle,
                           isLoading: presenter.isSolving,
-                          onPressed: presenter.isManuallyPaused
+                          badge: '${presenter.hintsRemaining}',
+                          isBadgeDepleted: presenter.hintsRemaining == 0,
+                          onPressed: !presenter.isGameActive ||
+                                  presenter.isManuallyPaused
                               ? null
                               : () {
                                   HapticFeedback.lightImpact();
-                                  presenter.hint();
+                                  if (presenter.canUseHint) {
+                                    presenter.hint();
+                                  } else if (presenter.hintsRemaining == 0) {
+                                    _promptHintRefill(presenter);
+                                  }
                                 },
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -568,6 +717,58 @@ class GameMaterialPageState extends State<GameMaterialPage> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// Calendar action opening the daily challenge. Shows a dot until today's
+/// board has been solved.
+class _DailyChallengeAction extends StatelessWidget {
+  final VoidCallback onStart;
+
+  const _DailyChallengeAction({required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final daily = DailyChallengeContainer.of(context);
+    if (daily == null) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final needsAttention = daily.isLoaded && !daily.isCompletedToday;
+
+    return Tooltip(
+      message: l10n.dailyChallengeTitle,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          IconButton(
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              onStart();
+            },
+            icon: Icon(
+              daily.isCompletedToday
+                  ? Icons.event_available_rounded
+                  : Icons.calendar_today_rounded,
+            ),
+            color: colorScheme.secondary,
+          ),
+          if (needsAttention)
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

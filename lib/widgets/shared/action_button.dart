@@ -9,16 +9,71 @@ class GameActionButton extends StatelessWidget {
   final String tooltip;
   final bool isLoading;
 
+  /// Small count shown in the corner, e.g. hints remaining. Hidden while
+  /// [isLoading].
+  final String? badge;
+
+  /// Draws [badge] in the error color instead of the primary one, to mark an
+  /// exhausted resource.
+  final bool isBadgeDepleted;
+
   const GameActionButton({
     super.key,
     required this.icon,
     required this.onPressed,
     required this.tooltip,
     this.isLoading = false,
+    this.badge,
+    this.isBadgeDepleted = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final button = _buildButton(context);
+    final badge = this.badge;
+    if (badge == null || isLoading) return button;
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final background =
+        isBadgeDepleted ? colorScheme.error : colorScheme.primary;
+    final foreground =
+        isBadgeDepleted ? colorScheme.onError : colorScheme.onPrimary;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        button,
+        Positioned(
+          top: -2,
+          right: -2,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            constraints: const BoxConstraints(minWidth: 18),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              border: Border.all(
+                color: colorScheme.surface,
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              badge,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: foreground,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildButton(BuildContext context) {
     final theme = Theme.of(context);
     return Tooltip(
       message: tooltip,

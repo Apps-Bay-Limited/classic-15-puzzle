@@ -12,8 +12,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:classic_15_puzzle/config/ui.dart';
-import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
-import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
 import 'package:classic_15_puzzle/widgets/util/sound_manager.dart';
 
 class GamePresenterWidget extends StatefulWidget {
@@ -21,7 +19,10 @@ class GamePresenterWidget extends StatefulWidget {
 
   final Widget child;
 
-  final void Function(Result)? onSolve;
+  /// Called when the board is solved. [wasDailyChallenge] is passed explicitly
+  /// rather than read back off the presenter, because the flag is cleared as
+  /// soon as the game stops — an async listener would otherwise miss it.
+  final void Function(Result result, bool wasDailyChallenge)? onSolve;
 
   const GamePresenterWidget({super.key, required this.child, this.onSolve});
 
@@ -78,14 +79,50 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   /// with the rest of the game state — the stack resets on app restart.
   final List<Board> _undoStack = [];
 
-  int _tipTapCount = 0;
+  /// Hints available in the current game. Finite so that asking for one is a
+  /// real decision; [grantHints] tops it back up (the UI offers a rewarded ad
+  /// for that).
+  static const int hintsPerGame = 3;
 
-  final InterstitialAdManager _interstitialAdManager = InterstitialAdManager();
+  int _hintsRemaining = hintsPerGame;
 
-  bool? _lastKnownAdsRemoved;
-  bool _isAdsRemoved = false;
+  /// Whether the current game is today's daily challenge, so [onSolve] can
+  /// tell the caller to advance the streak.
+  bool _isDailyChallenge = false;
+
+  bool get isDailyChallenge => _isDailyChallenge;
 
   bool get isSolving => _isSolving;
+
+  int get hintsRemaining => _hintsRemaining;
+
+  /// Whether a hint can be spent right now (there's an active, unsolved game
+  /// and budget left).
+  bool get canUseHint =>
+      _gameActive &&
+      !_isManuallyPaused &&
+      !_isSolving &&
+      !board.isSolved() &&
+      _hintsRemaining > 0;
+
+  /// Tops the hint budget back up, e.g. after the player watches a rewarded
+  /// ad. Capped at [hintsPerGame] so it can't be stockpiled indefinitely.
+  void grantHints(int amount) {
+    if (amount <= 0) return;
+    setState(() {
+      _hintsRemaining = min(hintsPerGame, _hintsRemaining + amount);
+    });
+  }
+
+  /// Test-only: spends a hint without running the A* solver, so budget
+  /// behavior can be exercised without paying for an isolate search.
+  @visibleForTesting
+  void debugSpendHint() {
+    if (_hintsRemaining <= 0) return;
+    setState(() {
+      _hintsRemaining -= 1;
+    });
+  }
 
   static const hintPauseDuration = Duration(milliseconds: 500);
 
@@ -100,21 +137,6 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     _loadState();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final isAdsRemoved =
-        PurchaseContainer.of(context)?.isAdsRemoved ?? false;
-    if (_lastKnownAdsRemoved == isAdsRemoved) return;
-    _lastKnownAdsRemoved = isAdsRemoved;
-    _isAdsRemoved = isAdsRemoved;
-
-    if (isAdsRemoved) {
-      _interstitialAdManager.dispose();
-    } else {
-      _interstitialAdManager.loadAd();
-    }
-  }
 
   void _loadState() async {
     dynamic jsonMap;
@@ -188,16 +210,38 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
   void play() {
     setState(() {
-      time = timeStopped;
-      steps = 0;
-      _pausedMs = 0;
-      _pauseStartedAt = null;
-      _isManuallyPaused = false;
-      _undoStack.clear();
+      _resetForNewGame();
+      _isDailyChallenge = false;
       _gameActive = true;
       board =
           game.shuffle(game.hardest(board), amount: board.size * board.size);
     });
+  }
+
+  /// Starts the daily challenge: a board generated purely from [seed], so
+  /// every player on the same day solves an identical puzzle.
+  void playDaily({required int seed, required int size}) {
+    setState(() {
+      _resetForNewGame();
+      _isDailyChallenge = true;
+      _gameActive = true;
+      final board = _createBoard(size);
+      this.board = game.shuffle(
+        game.hardest(board, random: Random(seed)),
+        amount: size * size,
+        random: Random(seed),
+      );
+    });
+  }
+
+  void _resetForNewGame() {
+    time = timeStopped;
+    steps = 0;
+    _pausedMs = 0;
+    _pauseStartedAt = null;
+    _isManuallyPaused = false;
+    _undoStack.clear();
+    _hintsRemaining = hintsPerGame;
   }
 
   void stop() {
@@ -209,6 +253,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       _pauseStartedAt = null;
       _isManuallyPaused = false;
       _undoStack.clear();
+      _isDailyChallenge = false;
     });
   }
 
@@ -292,6 +337,8 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       _pauseStartedAt = null;
       _isManuallyPaused = false;
       _undoStack.clear();
+      _hintsRemaining = hintsPerGame;
+      _isDailyChallenge = false;
       _gameActive = false;
       board = _createBoard(size);
     });
@@ -332,7 +379,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
           );
 
           history.addResult(result);
-          widget.onSolve?.call(result);
+          widget.onSolve?.call(result, _isDailyChallenge);
 
           stop();
         }
@@ -341,17 +388,13 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   }
 
   Future<void> hint() async {
-    if (!_gameActive || board.isSolved() || _isSolving || _isManuallyPaused) {
-      return;
-    }
+    if (!canUseHint) return;
 
     setState(() {
       _isSolving = true;
     });
 
     try {
-      _tipTapCount++;
-
       final nextMove = await compute(PuzzleSolver.findNextMove, board);
       if (nextMove == null) {
         if (mounted) {
@@ -362,43 +405,22 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
         return;
       }
 
-      if (!_isAdsRemoved && _tipTapCount > 0 && _tipTapCount % 5 == 0) {
-        final wasPlaying = isPlaying();
-        if (wasPlaying) {
-          _pauseStartedAt = DateTime.now().millisecondsSinceEpoch;
-          setState(() {});
-        }
+      // Only spend from the budget once the solver actually found a move.
+      if (mounted) {
+        setState(() {
+          _hintsRemaining = max(0, _hintsRemaining - 1);
+        });
+      }
 
-        _interstitialAdManager.showAdIfAvailable(
-          onAdClosed: () async {
-            if (wasPlaying && _pauseStartedAt != null) {
-              _pausedMs += DateTime.now().millisecondsSinceEpoch - _pauseStartedAt!;
-              _pauseStartedAt = null;
-            }
+      if (isPlaying()) {
+        await _pauseTimerFor(hintPauseDuration);
+      }
 
-            if (isPlaying()) {
-              await _pauseTimerFor(hintPauseDuration);
-            }
-
-            if (mounted) {
-              tap(point: nextMove);
-              setState(() {
-                _isSolving = false;
-              });
-            }
-          },
-        );
-      } else {
-        if (isPlaying()) {
-          await _pauseTimerFor(hintPauseDuration);
-        }
-
-        if (mounted) {
-          tap(point: nextMove);
-          setState(() {
-            _isSolving = false;
-          });
-        }
+      if (mounted) {
+        tap(point: nextMove);
+        setState(() {
+          _isSolving = false;
+        });
       }
     } catch (e) {
       debugPrint("Error computing hint: $e");
@@ -434,6 +456,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       _pausedMs = 0;
       _pauseStartedAt = null;
       _undoStack.clear();
+      _hintsRemaining = hintsPerGame;
 
       Board boardFuture;
       if (keepActive) {

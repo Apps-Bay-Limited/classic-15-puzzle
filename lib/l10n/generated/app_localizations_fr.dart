@@ -145,10 +145,66 @@ class AppLocalizationsFr extends AppLocalizations {
   String get movesLabel => 'COUPS';
 
   @override
+  String get noRecordYetLabel => 'Aucun record — terminez pour en établir un';
+
+  @override
+  String get dailyChallengeTitle => 'Défi du jour';
+
+  @override
+  String get dailyChallengeDoneToday => 'Résolu aujourd\'hui ✓';
+
+  @override
+  String get dailyChallengeStartButton => 'COMMENCER';
+
+  @override
+  String get dailyChallengeReplayButton => 'REJOUER';
+
+  @override
+  String dailyChallengeDescription(int size) {
+    return 'Tous les joueurs reçoivent la même grille ${size}x$size aujourd\'hui. Commencer remplacera votre partie en cours.';
+  }
+
+  @override
+  String dailyStreakLabel(int streak, int best) {
+    return 'Série : $streak · Record : $best';
+  }
+
+  @override
+  String personalBestLabel(String time) {
+    return 'Record $time';
+  }
+
+  @override
+  String aheadOfBestLabel(String time) {
+    return '$time d\'avance sur le record';
+  }
+
+  @override
+  String behindBestLabel(String time) {
+    return '$time de retard sur le record';
+  }
+
+  @override
   String get hintTooltip => 'Indice';
 
   @override
   String get undoTooltip => 'Annuler';
+
+  @override
+  String get outOfHintsTitle => 'Plus d\'indices';
+
+  @override
+  String get watchAdButton => 'REGARDER UNE PUB';
+
+  @override
+  String outOfHintsMessage(int count) {
+    return 'Vous avez utilisé tous vos indices pour ce puzzle. Regardez une courte publicité pour en obtenir $count de plus.';
+  }
+
+  @override
+  String hintsRefilledMessage(int count) {
+    return '$count indices ajoutés.';
+  }
 
   @override
   String get pauseTooltip => 'Pause';

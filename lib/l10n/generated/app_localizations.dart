@@ -322,6 +322,66 @@ abstract class AppLocalizations {
   /// **'MOVES'**
   String get movesLabel;
 
+  /// No description provided for @noRecordYetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No record yet — finish to set one'**
+  String get noRecordYetLabel;
+
+  /// No description provided for @dailyChallengeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Challenge'**
+  String get dailyChallengeTitle;
+
+  /// No description provided for @dailyChallengeDoneToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Solved today ✓'**
+  String get dailyChallengeDoneToday;
+
+  /// No description provided for @dailyChallengeStartButton.
+  ///
+  /// In en, this message translates to:
+  /// **'START'**
+  String get dailyChallengeStartButton;
+
+  /// No description provided for @dailyChallengeReplayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'PLAY AGAIN'**
+  String get dailyChallengeReplayButton;
+
+  /// No description provided for @dailyChallengeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Every player gets the same {size}x{size} board today. Starting it replaces your current game.'**
+  String dailyChallengeDescription(int size);
+
+  /// No description provided for @dailyStreakLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak: {streak} · Best: {best}'**
+  String dailyStreakLabel(int streak, int best);
+
+  /// Shows the personal best time to beat for this grid size.
+  ///
+  /// In en, this message translates to:
+  /// **'Best {time}'**
+  String personalBestLabel(String time);
+
+  /// How much margin is left before the personal best is passed.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} ahead of best'**
+  String aheadOfBestLabel(String time);
+
+  /// How far past the personal best the current run is.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} behind best'**
+  String behindBestLabel(String time);
+
   /// No description provided for @hintTooltip.
   ///
   /// In en, this message translates to:
@@ -333,6 +393,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undo'**
   String get undoTooltip;
+
+  /// No description provided for @outOfHintsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of hints'**
+  String get outOfHintsTitle;
+
+  /// No description provided for @watchAdButton.
+  ///
+  /// In en, this message translates to:
+  /// **'WATCH AD'**
+  String get watchAdButton;
+
+  /// No description provided for @outOfHintsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used all your hints for this puzzle. Watch a short ad to get {count} more.'**
+  String outOfHintsMessage(int count);
+
+  /// No description provided for @hintsRefilledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} hints added.'**
+  String hintsRefilledMessage(int count);
 
   /// No description provided for @pauseTooltip.
   ///

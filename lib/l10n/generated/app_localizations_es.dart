@@ -146,10 +146,66 @@ class AppLocalizationsEs extends AppLocalizations {
   String get movesLabel => 'MOVIMIENTOS';
 
   @override
+  String get noRecordYetLabel => 'Sin récord — termina para establecer uno';
+
+  @override
+  String get dailyChallengeTitle => 'Reto diario';
+
+  @override
+  String get dailyChallengeDoneToday => 'Resuelto hoy ✓';
+
+  @override
+  String get dailyChallengeStartButton => 'EMPEZAR';
+
+  @override
+  String get dailyChallengeReplayButton => 'JUGAR DE NUEVO';
+
+  @override
+  String dailyChallengeDescription(int size) {
+    return 'Hoy todos los jugadores reciben el mismo tablero de ${size}x$size. Empezarlo reemplazará tu partida actual.';
+  }
+
+  @override
+  String dailyStreakLabel(int streak, int best) {
+    return 'Racha: $streak · Mejor: $best';
+  }
+
+  @override
+  String personalBestLabel(String time) {
+    return 'Récord $time';
+  }
+
+  @override
+  String aheadOfBestLabel(String time) {
+    return '$time por delante del récord';
+  }
+
+  @override
+  String behindBestLabel(String time) {
+    return '$time por detrás del récord';
+  }
+
+  @override
   String get hintTooltip => 'Pista';
 
   @override
   String get undoTooltip => 'Deshacer';
+
+  @override
+  String get outOfHintsTitle => 'Sin pistas';
+
+  @override
+  String get watchAdButton => 'VER ANUNCIO';
+
+  @override
+  String outOfHintsMessage(int count) {
+    return 'Has usado todas tus pistas para este rompecabezas. Mira un anuncio corto para conseguir $count más.';
+  }
+
+  @override
+  String hintsRefilledMessage(int count) {
+    return '$count pistas añadidas.';
+  }
 
   @override
   String get pauseTooltip => 'Pausa';

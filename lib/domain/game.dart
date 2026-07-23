@@ -7,11 +7,14 @@ import 'package:classic_15_puzzle/domain/starting_positions.dart';
 abstract class Game {
   static Game instance = _GameImpl();
 
-  Board hardest(Board board);
+  /// Picks one of the known hard starting positions. Pass [random] to make the
+  /// choice reproducible (the daily challenge seeds it from the date so every
+  /// player gets an identical board).
+  Board hardest(Board board, {Random? random});
 
   /// Randomly shuffles the chips on a board, for
-  /// a given amount of times.
-  Board shuffle(Board board, {int amount = 300});
+  /// a given amount of times. Pass [random] for a reproducible shuffle.
+  Board shuffle(Board board, {int amount = 300, Random? random});
 
   Board tap(Board board, {required Point<int> point});
 
@@ -25,7 +28,7 @@ abstract class Game {
 
 class _GameImpl implements Game {
   @override
-  Board hardest(Board board) {
+  Board hardest(Board board, {Random? random}) {
     List<List<int>> variants;
 
     switch (board.size) {
@@ -46,11 +49,12 @@ class _GameImpl implements Game {
         }
       default:
         {
-          return shuffle(board);
+          return shuffle(board, random: random);
         }
     }
 
-    final variant = variants[Random().nextInt(variants.length)];
+    final variant =
+        variants[(random ?? Random()).nextInt(variants.length)];
 
     // Chips
     final chips = List.of(board.chips, growable: false);
@@ -73,8 +77,8 @@ class _GameImpl implements Game {
   }
 
   @override
-  Board shuffle(Board board, {int amount = 300}) {
-    final random = Random();
+  Board shuffle(Board board, {int amount = 300, Random? random}) {
+    random ??= Random();
 
     List<List<Chip?>> matrix = List.generate(board.size, (i) {
       return List.generate(board.size, (j) {

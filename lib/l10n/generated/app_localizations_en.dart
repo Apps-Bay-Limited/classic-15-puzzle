@@ -141,10 +141,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String get movesLabel => 'MOVES';
 
   @override
+  String get noRecordYetLabel => 'No record yet — finish to set one';
+
+  @override
+  String get dailyChallengeTitle => 'Daily Challenge';
+
+  @override
+  String get dailyChallengeDoneToday => 'Solved today ✓';
+
+  @override
+  String get dailyChallengeStartButton => 'START';
+
+  @override
+  String get dailyChallengeReplayButton => 'PLAY AGAIN';
+
+  @override
+  String dailyChallengeDescription(int size) {
+    return 'Every player gets the same ${size}x$size board today. Starting it replaces your current game.';
+  }
+
+  @override
+  String dailyStreakLabel(int streak, int best) {
+    return 'Streak: $streak · Best: $best';
+  }
+
+  @override
+  String personalBestLabel(String time) {
+    return 'Best $time';
+  }
+
+  @override
+  String aheadOfBestLabel(String time) {
+    return '$time ahead of best';
+  }
+
+  @override
+  String behindBestLabel(String time) {
+    return '$time behind best';
+  }
+
+  @override
   String get hintTooltip => 'Hint';
 
   @override
   String get undoTooltip => 'Undo';
+
+  @override
+  String get outOfHintsTitle => 'Out of hints';
+
+  @override
+  String get watchAdButton => 'WATCH AD';
+
+  @override
+  String outOfHintsMessage(int count) {
+    return 'You\'ve used all your hints for this puzzle. Watch a short ad to get $count more.';
+  }
+
+  @override
+  String hintsRefilledMessage(int count) {
+    return '$count hints added.';
+  }
 
   @override
   String get pauseTooltip => 'Pause';

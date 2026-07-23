@@ -136,10 +136,66 @@ class AppLocalizationsZh extends AppLocalizations {
   String get movesLabel => '步数';
 
   @override
+  String get noRecordYetLabel => '暂无记录——完成即可创建';
+
+  @override
+  String get dailyChallengeTitle => '每日挑战';
+
+  @override
+  String get dailyChallengeDoneToday => '今日已完成 ✓';
+
+  @override
+  String get dailyChallengeStartButton => '开始';
+
+  @override
+  String get dailyChallengeReplayButton => '再玩一次';
+
+  @override
+  String dailyChallengeDescription(int size) {
+    return '今天所有玩家都会得到同一个 ${size}x$size 棋盘。开始挑战将替换当前的游戏。';
+  }
+
+  @override
+  String dailyStreakLabel(int streak, int best) {
+    return '连续：$streak 天 · 最佳：$best 天';
+  }
+
+  @override
+  String personalBestLabel(String time) {
+    return '最佳 $time';
+  }
+
+  @override
+  String aheadOfBestLabel(String time) {
+    return '领先最佳 $time';
+  }
+
+  @override
+  String behindBestLabel(String time) {
+    return '落后最佳 $time';
+  }
+
+  @override
   String get hintTooltip => '提示';
 
   @override
   String get undoTooltip => '撤销';
+
+  @override
+  String get outOfHintsTitle => '提示已用完';
+
+  @override
+  String get watchAdButton => '观看广告';
+
+  @override
+  String outOfHintsMessage(int count) {
+    return '本局拼图的提示已全部用完。观看一段短广告即可再获得 $count 次。';
+  }
+
+  @override
+  String hintsRefilledMessage(int count) {
+    return '已增加 $count 次提示。';
+  }
 
   @override
   String get pauseTooltip => '暂停';
@@ -415,10 +471,66 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get movesLabel => '步數';
 
   @override
+  String get noRecordYetLabel => '尚無記錄——完成即可建立';
+
+  @override
+  String get dailyChallengeTitle => '每日挑戰';
+
+  @override
+  String get dailyChallengeDoneToday => '今日已完成 ✓';
+
+  @override
+  String get dailyChallengeStartButton => '開始';
+
+  @override
+  String get dailyChallengeReplayButton => '再玩一次';
+
+  @override
+  String dailyChallengeDescription(int size) {
+    return '今天所有玩家都會得到同一個 ${size}x$size 棋盤。開始挑戰將取代目前的遊戲。';
+  }
+
+  @override
+  String dailyStreakLabel(int streak, int best) {
+    return '連續：$streak 天 · 最佳：$best 天';
+  }
+
+  @override
+  String personalBestLabel(String time) {
+    return '最佳 $time';
+  }
+
+  @override
+  String aheadOfBestLabel(String time) {
+    return '領先最佳 $time';
+  }
+
+  @override
+  String behindBestLabel(String time) {
+    return '落後最佳 $time';
+  }
+
+  @override
   String get hintTooltip => '提示';
 
   @override
   String get undoTooltip => '復原';
+
+  @override
+  String get outOfHintsTitle => '提示已用完';
+
+  @override
+  String get watchAdButton => '觀看廣告';
+
+  @override
+  String outOfHintsMessage(int count) {
+    return '本局拼圖的提示已全部用完。觀看一段短廣告即可再獲得 $count 次。';
+  }
+
+  @override
+  String hintsRefilledMessage(int count) {
+    return '已增加 $count 次提示。';
+  }
 
   @override
   String get pauseTooltip => '暫停';

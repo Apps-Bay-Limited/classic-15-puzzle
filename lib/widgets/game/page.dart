@@ -4,6 +4,7 @@ import 'package:classic_15_puzzle/play_games.dart';
 import 'package:classic_15_puzzle/widgets/game/material/page.dart';
 import 'package:classic_15_puzzle/widgets/game/material/victory.dart';
 import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
+import 'package:classic_15_puzzle/widgets/util/daily_challenge_container.dart';
 import 'package:classic_15_puzzle/widgets/util/sound_manager.dart';
 import 'package:flutter/material.dart';
 
@@ -15,9 +16,12 @@ class GamePage extends StatelessWidget {
     final rootWidget = _buildRoot(context);
     return GamePresenterWidget(
       child: rootWidget,
-      onSolve: (result) {
+      onSolve: (result, wasDailyChallenge) {
         _playVictorySound(context);
         _submitResult(context, result);
+        if (wasDailyChallenge) {
+          DailyChallengeContainer.of(context)?.markCompletedToday();
+        }
         _showVictoryDialog(context, result);
       },
     );

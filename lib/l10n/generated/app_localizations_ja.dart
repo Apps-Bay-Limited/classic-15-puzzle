@@ -138,10 +138,66 @@ class AppLocalizationsJa extends AppLocalizations {
   String get movesLabel => '手数';
 
   @override
+  String get noRecordYetLabel => '記録なし——クリアして記録を作ろう';
+
+  @override
+  String get dailyChallengeTitle => 'デイリーチャレンジ';
+
+  @override
+  String get dailyChallengeDoneToday => '本日クリア済み ✓';
+
+  @override
+  String get dailyChallengeStartButton => 'スタート';
+
+  @override
+  String get dailyChallengeReplayButton => 'もう一度プレイ';
+
+  @override
+  String dailyChallengeDescription(int size) {
+    return '今日はすべてのプレイヤーが同じ${size}x$sizeの盤面に挑戦します。開始すると現在のゲームは置き換えられます。';
+  }
+
+  @override
+  String dailyStreakLabel(int streak, int best) {
+    return '連続：$streak日 · 最高：$best日';
+  }
+
+  @override
+  String personalBestLabel(String time) {
+    return '自己ベスト $time';
+  }
+
+  @override
+  String aheadOfBestLabel(String time) {
+    return '自己ベストより$time速い';
+  }
+
+  @override
+  String behindBestLabel(String time) {
+    return '自己ベストより$time遅い';
+  }
+
+  @override
   String get hintTooltip => 'ヒント';
 
   @override
   String get undoTooltip => '元に戻す';
+
+  @override
+  String get outOfHintsTitle => 'ヒントがありません';
+
+  @override
+  String get watchAdButton => '広告を見る';
+
+  @override
+  String outOfHintsMessage(int count) {
+    return 'このパズルのヒントをすべて使いました。短い広告を見ると、あと$count回もらえます。';
+  }
+
+  @override
+  String hintsRefilledMessage(int count) {
+    return 'ヒントを$count回追加しました。';
+  }
 
   @override
   String get pauseTooltip => '一時停止';

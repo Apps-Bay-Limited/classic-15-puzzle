@@ -9,6 +9,7 @@ import 'package:classic_15_puzzle/utils/platform.dart';
 import 'package:classic_15_puzzle/widgets/game/page.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/in_app_reviewer_helper.dart';
+import 'package:classic_15_puzzle/widgets/util/daily_challenge_container.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
 import 'package:classic_15_puzzle/widgets/util/theme_unlock_container.dart';
 import 'package:flutter/foundation.dart';
@@ -40,9 +41,11 @@ void main() async {
     runApp(
       const PurchaseContainer(
         child: ThemeUnlockContainer(
-          child: PlayGamesContainer(
-            child: ConfigUiContainer(
-              child: MyApp(),
+          child: DailyChallengeContainer(
+            child: PlayGamesContainer(
+              child: ConfigUiContainer(
+                child: MyApp(),
+              ),
             ),
           ),
         ),
