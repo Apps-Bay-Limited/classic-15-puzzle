@@ -46,6 +46,8 @@
 	</dict>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier will be used to deliver personalized ads to you.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a photo to turn into a custom puzzle in Photo Mode.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

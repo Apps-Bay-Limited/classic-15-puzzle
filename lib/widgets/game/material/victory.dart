@@ -1,4 +1,5 @@
 import 'package:classic_15_puzzle/data/result.dart';
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/play_games.dart';
 import 'package:classic_15_puzzle/theme/app_radii.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
@@ -34,21 +35,24 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
   Widget build(BuildContext context) {
     final timeFormatted = widget.timeFormatter(widget.result.time);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     final actions = <Widget>[
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('CLOSE'),
+        child: Text(l10n.close),
       ),
       FilledButton.icon(
         icon: const Icon(Icons.share_rounded, size: 18),
-        label: const Text('SHARE'),
+        label: Text(l10n.shareButton),
         onPressed: () {
           SharePlus.instance.share(
             ShareParams(
-              text: 'I solved the Classic 15 Puzzle '
-                  '${widget.result.size}x${widget.result.size} in $timeFormatted '
-                  'with ${widget.result.steps} moves!',
+              text: l10n.shareText(
+                '${widget.result.size}',
+                timeFormatted,
+                '${widget.result.steps}',
+              ),
             ),
           );
         },
@@ -60,7 +64,7 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
         0,
         TextButton.icon(
           icon: const Icon(Icons.leaderboard_rounded, size: 18),
-          label: const Text('RANKINGS'),
+          label: Text(l10n.rankingsButton),
           onPressed: () {
             final playGames = PlayGamesContainer.of(context);
             playGames?.showLeaderboard(
@@ -74,7 +78,7 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
     return AlertDialog(
       icon: Icon(Icons.stars_rounded, size: 48, color: colorScheme.primary),
       title: Text(
-        'Magnificent!',
+        l10n.victoryTitle,
         textAlign: TextAlign.center,
         style: AppTypography.dialogTitle(context),
       ),
@@ -82,7 +86,7 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
-            'You completed the ${widget.result.size}x${widget.result.size} puzzle in record time.',
+            l10n.victoryDescription('${widget.result.size}'),
             textAlign: TextAlign.center,
             style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
@@ -96,9 +100,9 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
-                ResultStatItem(label: 'TIME', value: timeFormatted),
+                ResultStatItem(label: l10n.timeLabel, value: timeFormatted),
                 ResultStatItem(
-                  label: 'MOVES',
+                  label: l10n.movesLabel,
                   value: '${widget.result.steps}',
                 ),
               ],

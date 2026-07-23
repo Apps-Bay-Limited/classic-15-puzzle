@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:classic_15_puzzle/config/ui.dart';
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/play_games.dart';
 import 'package:classic_15_puzzle/theme/app_theme.dart';
 import 'package:classic_15_puzzle/utils/platform.dart';
@@ -71,21 +72,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const title = 'Classic 15 Puzzle';
-    return const _MyMaterialApp(title: title);
+    return const _MyMaterialApp();
   }
 }
 
 /// Base class for all platforms, such as
 /// [Platform.isIOS] or [Platform.isAndroid].
 abstract class _MyPlatformApp extends StatelessWidget {
-  final String title;
-
-  const _MyPlatformApp({required this.title});
+  const _MyPlatformApp();
 }
 
 class _MyMaterialApp extends _MyPlatformApp {
-  const _MyMaterialApp({required super.title});
+  const _MyMaterialApp();
 
   @override
   Widget build(BuildContext context) {
@@ -103,8 +101,10 @@ class _MyMaterialApp extends _MyPlatformApp {
     }
 
     return MaterialApp(
-      title: title,
+      onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeMode,

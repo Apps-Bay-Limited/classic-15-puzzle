@@ -37,17 +37,29 @@ void main() {
         expect(service.isSupported, isFalse);
         expect(service.isAdsRemoved, isFalse);
         expect(service.removeAdsProduct, isNull);
+        expect(service.themePackProduct, isNull);
 
         // Buying, restoring, and resetting must all be safe no-ops.
         await service.init();
         await service.loadProducts();
         await service.buyRemoveAds();
+        await service.buyThemePack();
         await service.restorePurchases();
         await service.resetForDebug();
 
         expect(service.isAdsRemoved, isFalse);
         await expectLater(service.feedback, emitsDone);
 
+        service.dispose();
+      },
+    );
+
+    test(
+      'unlocks the Theme Pack for free on non-iOS test hosts, matching '
+      'Android behavior: no billing exists to charge them for it',
+      () {
+        final service = PurchaseService();
+        expect(service.isThemePackOwned, isTrue);
         service.dispose();
       },
     );

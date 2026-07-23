@@ -1,5 +1,6 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
 
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/theme/app_motion.dart';
 import 'package:classic_15_puzzle/theme/app_radii.dart';
 import 'package:flutter/material.dart' hide Chip;
@@ -13,6 +14,11 @@ class ChipWidget extends StatefulWidget {
   final double fontSize;
   final double size;
 
+  /// When both this and [photoSrcRect] are set (photo puzzle mode), the
+  /// corresponding slice of [photoImage] is painted instead of [text].
+  final ui.Image? photoImage;
+  final Rect? photoSrcRect;
+
   const ChipWidget(
     this.text,
     this.overlayColor,
@@ -22,6 +28,8 @@ class ChipWidget extends StatefulWidget {
     super.key,
     this.onPressed,
     required this.size,
+    this.photoImage,
+    this.photoSrcRect,
   });
 
   @override
@@ -80,9 +88,33 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
     color = Color.alphaBlend(widget.backgroundColor, color);
     color = Color.alphaBlend(widget.overlayColor, color);
 
+    final photoImage = widget.photoImage;
+    final photoSrcRect = widget.photoSrcRect;
+    final tileContent = photoImage != null && photoSrcRect != null
+        ? SizedBox.expand(
+            child: CustomPaint(
+              painter: _PhotoTilePainter(
+                image: photoImage,
+                srcRect: photoSrcRect,
+              ),
+            ),
+          )
+        : Center(
+            child: Text(
+              widget.text ?? '',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: widget.fontSize,
+                color: widget.fontColor,
+                letterSpacing: -0.5,
+              ),
+            ),
+          );
+
     Widget content = Material(
       shape: shape,
       color: color,
+      clipBehavior: Clip.antiAlias,
       elevation: isIOS ? 0 : 2,
       child: InkWell(
         onTap: widget.onPressed,
@@ -90,17 +122,7 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
         onTapUp: (_) => _onTapEnd(),
         onTapCancel: _onTapEnd,
         borderRadius: BorderRadius.circular(radius),
-        child: Center(
-          child: Text(
-            widget.text ?? '',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: widget.fontSize,
-              color: widget.fontColor,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ),
+        child: tileContent,
       ),
     );
 
@@ -108,7 +130,7 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
       content = ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
@@ -127,8 +149,11 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
         ? content
         : ScaleTransition(scale: _scaleAnimation, child: content);
 
+    final l10n = AppLocalizations.of(context)!;
     return Semantics(
-      label: widget.text != null ? 'Tile ${widget.text}' : 'Empty tile',
+      label: widget.text != null
+          ? l10n.tileLabel(widget.text!)
+          : l10n.emptyTileLabel,
       button: widget.onPressed != null,
       child: Padding(
         padding: EdgeInsets.all(tilePadding),
@@ -136,4 +161,26 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
       ),
     );
   }
+}
+
+/// Paints one fixed slice of a shared photo-mode image into a tile.
+class _PhotoTilePainter extends CustomPainter {
+  final ui.Image image;
+  final Rect srcRect;
+
+  const _PhotoTilePainter({required this.image, required this.srcRect});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawImageRect(
+      image,
+      srcRect,
+      Offset.zero & size,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PhotoTilePainter oldDelegate) =>
+      oldDelegate.image != image || oldDelegate.srcRect != srcRect;
 }

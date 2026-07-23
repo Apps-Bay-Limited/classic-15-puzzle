@@ -1,3 +1,4 @@
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/widgets/game/material/sheets.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,8 @@ void main() {
       PurchaseContainer(
         service: fake,
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => Scaffold(
               body: Center(

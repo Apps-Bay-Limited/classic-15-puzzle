@@ -1,5 +1,6 @@
 import 'package:classic_15_puzzle/data/history.dart';
 import 'package:classic_15_puzzle/data/result.dart';
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
 import 'package:classic_15_puzzle/theme/app_typography.dart';
 import 'package:classic_15_puzzle/widgets/game/format.dart';
@@ -14,11 +15,13 @@ class HallOfFameDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return DefaultTabController(
       length: 3,
       child: AlertDialog(
-        title: Text('Hall of Fame', style: AppTypography.dialogTitle(context)),
+        title:
+            Text(l10n.hallOfFameTitle, style: AppTypography.dialogTitle(context)),
         contentPadding: EdgeInsets.zero,
         content: SizedBox(
           width: double.maxFinite,
@@ -26,10 +29,10 @@ class HallOfFameDialog extends StatelessWidget {
           child: Column(
             children: [
               TabBar(
-                tabs: const [
-                  Tab(text: '3x3'),
-                  Tab(text: '4x4'),
-                  Tab(text: '5x5'),
+                tabs: [
+                  Tab(child: Text(l10n.gridSizeLabel('3'))),
+                  Tab(child: Text(l10n.gridSizeLabel('4'))),
+                  Tab(child: Text(l10n.gridSizeLabel('5'))),
                 ],
                 labelColor: colorScheme.primary,
                 unselectedLabelColor: colorScheme.outline,
@@ -51,7 +54,7 @@ class HallOfFameDialog extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('CLOSE'),
+            child: Text(l10n.close),
           ),
         ],
       ),
@@ -71,6 +74,7 @@ class _SizeStats extends StatelessWidget {
     final bestMoves = history.bestMoves[size];
     final recent = history.log.where((r) => r.size == size).toList();
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     if (recent.isEmpty) {
       return Center(
@@ -83,10 +87,10 @@ class _SizeStats extends StatelessWidget {
               color: colorScheme.outline.withValues(alpha: 0.3),
             ),
             const SizedBox(height: AppSpacing.md),
-            Text('No games yet', style: TextStyle(color: colorScheme.outline)),
+            Text(l10n.noGamesYet, style: TextStyle(color: colorScheme.outline)),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Solve a puzzle to see your records here',
+              l10n.solveToSeeRecords,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
           ],
@@ -101,23 +105,27 @@ class _SizeStats extends StatelessWidget {
           children: [
             Expanded(
               child: AccentStatCard.gold(
-                label: 'BEST TIME',
-                value: bestTime != null ? formatElapsedTime(bestTime.time) : '--',
+                label: l10n.bestTimeLabel,
+                value: bestTime != null
+                    ? formatElapsedTime(bestTime.time)
+                    : l10n.noDataPlaceholder,
                 icon: Icons.timer_rounded,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: AccentStatCard.slate(
-                label: 'MIN MOVES',
-                value: bestMoves != null ? '${bestMoves.steps}' : '--',
+                label: l10n.minMovesLabel,
+                value: bestMoves != null
+                    ? '${bestMoves.steps}'
+                    : l10n.noDataPlaceholder,
                 icon: Icons.bolt_rounded,
               ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text('RECENT LOG', style: AppTypography.sectionHeader(context)),
+        Text(l10n.recentLogLabel, style: AppTypography.sectionHeader(context)),
         const SizedBox(height: AppSpacing.xs),
         ...recent.map((result) => _LogItem(result: result)),
       ],
@@ -133,6 +141,7 @@ class _LogItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final date = DateTime.fromMillisecondsSinceEpoch(result.timestamp);
 
     return Container(
@@ -151,7 +160,12 @@ class _LogItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}',
+                l10n.recentLogTimestamp(
+                  '${date.day}',
+                  '${date.month}',
+                  '${date.hour}',
+                  date.minute.toString().padLeft(2, '0'),
+                ),
                 style: TextStyle(
                   fontSize: 12,
                   color: colorScheme.outline,
@@ -159,7 +173,7 @@ class _LogItem extends StatelessWidget {
                 ),
               ),
               Text(
-                '${result.steps} moves',
+                l10n.movesCount('${result.steps}'),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ],

@@ -1,11 +1,14 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:classic_15_puzzle/data/board.dart';
 import 'package:classic_15_puzzle/data/chip.dart';
 import 'package:classic_15_puzzle/domain/game.dart';
-import 'package:classic_15_puzzle/theme/app_colors.dart';
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/theme/app_motion.dart';
+import 'package:classic_15_puzzle/theme/tile_theme.dart';
 import 'package:classic_15_puzzle/widgets/game/chip.dart';
+import 'package:classic_15_puzzle/widgets/game/photo_slicer.dart';
 import 'package:flutter/material.dart' hide Chip;
 import 'package:flutter/services.dart';
 
@@ -15,6 +18,11 @@ class BoardWidget extends StatefulWidget {
   final bool showNumbers;
   final void Function(Point<int>)? onTap;
   final bool isSpeedRunModeEnabled;
+  final TileTheme theme;
+
+  /// When set (photo puzzle mode), tiles paint a slice of this decoded
+  /// image instead of the tile palette + number.
+  final ui.Image? photoImage;
 
   const BoardWidget({
     super.key,
@@ -22,6 +30,8 @@ class BoardWidget extends StatefulWidget {
     required this.size,
     this.showNumbers = true,
     this.isSpeedRunModeEnabled = false,
+    this.theme = TileTheme.classic,
+    this.photoImage,
     this.onTap,
   });
 
@@ -47,9 +57,6 @@ class BoardWidgetState extends State<BoardWidget>
   static final double _kDecelerationRate = log(0.78) / log(0.9);
 
   static const double _initialVelocityPenetration = 3.065;
-
-  static const Color rightColor = AppColors.tileFill;
-  static const Color rightFontColor = AppColors.tileText;
 
   static double _decelerationForFriction(double friction) {
     return friction * 61774.04968;
@@ -114,6 +121,18 @@ class BoardWidgetState extends State<BoardWidget>
       newBoard: widget.board,
       oldBoard: oldWidget.board,
     );
+    if (oldWidget.theme != widget.theme ||
+        oldWidget.photoImage != widget.photoImage) {
+      // A live theme/photo swap while a game is in progress: the loop above
+      // only re-colors chips on a full rebuild (grid size change), so do it
+      // explicitly here too.
+      setState(() {
+        for (final chip in chips) {
+          chip.backgroundColor = widget.theme.backgroundColor;
+          chip.fontColor = widget.theme.textColor;
+        }
+      });
+    }
   }
 
   void _performSetPrevBoard() =>
@@ -128,10 +147,9 @@ class BoardWidgetState extends State<BoardWidget>
         chips = board.chips.map((chip) {
           final x = chip.currentPoint.x / board.size;
           final y = chip.currentPoint.y / board.size;
-          const color = rightColor;
-          const colorFont = rightFontColor;
           return _Chip(x, y, chip.currentPoint,
-              backgroundColor: color, fontColor: colorFont);
+              backgroundColor: widget.theme.backgroundColor,
+              fontColor: widget.theme.textColor);
         }).toList();
       });
       return;
@@ -331,7 +349,7 @@ class BoardWidgetState extends State<BoardWidget>
       y: board.blank.y.toDouble() / board.size.toDouble(),
       scale: 1.0,
       chip: (chipSize) => Semantics(
-        label: 'Blank space',
+        label: AppLocalizations.of(context)!.emptyTileLabel,
         child: const SizedBox.shrink(),
       ),
     );
@@ -369,17 +387,32 @@ class BoardWidgetState extends State<BoardWidget>
         extra.backgroundColor.withValues(alpha: dst < 1 ? 1 - dst : 0);
     final fontColor = extra.fontColor;
 
+    final photoImage = widget.photoImage;
+    final photoSrcRect = photoImage != null
+        ? computePhotoTileSrcRect(
+            imageWidth: photoImage.width.toDouble(),
+            imageHeight: photoImage.height.toDouble(),
+            boardSize: board.size,
+            targetPoint: chip.targetPoint,
+          )
+        : null;
+    final text = photoImage != null
+        ? null
+        : (widget.showNumbers ? "${chip.number + 1}" : null);
+
     return _buildChipWidgetSkeleton(
       x: extra.x,
       y: extra.y,
       scale: extra.scale,
       chip: (chipSize) => ChipWidget(
-        widget.showNumbers ? "${chip.number + 1}" : null,
+        text,
         overlayColor,
         backgroundColor,
         fontColor,
         chipSize / 3 + 10,
         size: widget.size,
+        photoImage: photoImage,
+        photoSrcRect: photoSrcRect,
         onPressed: !_isSpeedRunModeEnabled
             ? () {
                 widget.onTap?.call(chip.currentPoint);

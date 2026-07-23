@@ -1,3 +1,4 @@
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 
@@ -29,7 +30,7 @@ class AdBannerSlot extends StatelessWidget {
       child: isLoaded && adWidget != null
           ? adWidget
           : Text(
-              'ADVERTISEMENT',
+              AppLocalizations.of(context)!.advertisementLabel,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Theme.of(context)
                         .colorScheme

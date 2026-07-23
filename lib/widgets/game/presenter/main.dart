@@ -11,8 +11,10 @@ import 'package:classic_15_puzzle/utils/serializable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:classic_15_puzzle/config/ui.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
+import 'package:classic_15_puzzle/widgets/util/sound_manager.dart';
 
 class GamePresenterWidget extends StatefulWidget {
   static const supportedSizes = [3, 4, 5];
@@ -230,6 +232,10 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     final nextBoard = game.tap(board, point: point);
 
     if (prevBoard == nextBoard) return;
+
+    if (ConfigUiContainer.of(context)?.isSoundEnabled ?? true) {
+      SoundManager.playMove();
+    }
 
     setState(() {
       if (_gameActive && !isPlaying()) {

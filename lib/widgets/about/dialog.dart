@@ -1,3 +1,4 @@
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/links.dart';
 import 'package:classic_15_puzzle/theme/app_radii.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
@@ -12,33 +13,33 @@ class AboutDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return AlertDialog(
-      title: Text('About', style: AppTypography.dialogTitle(context)),
+      title: Text(l10n.aboutTitle, style: AppTypography.dialogTitle(context)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Classic 15 Puzzle is a premium, open-source puzzle experience. '
-              'It features beautiful animations, haptic feedback, and a clean interface.',
+              l10n.aboutDescription1,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Compete with friends online and track your best times.',
+              l10n.aboutDescription2,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.lg),
             _AboutLink(
               icon: Icons.code_rounded,
-              label: 'Join development',
+              label: l10n.aboutJoinDevelopment,
               url: urlRepository,
             ),
             _AboutLink(
               icon: Icons.bug_report_rounded,
-              label: 'Send bug report',
+              label: l10n.aboutSendBugReport,
               url: urlFeedback,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -46,8 +47,11 @@ class AboutDialog extends StatelessWidget {
               future: PackageInfo.fromPlatform(),
               builder: (context, snapshot) {
                 final text = snapshot.hasData
-                    ? 'Version ${snapshot.data!.version} (${snapshot.data!.buildNumber})'
-                    : 'Classic 15 Puzzle';
+                    ? l10n.aboutVersion(
+                        snapshot.data!.version,
+                        snapshot.data!.buildNumber,
+                      )
+                    : l10n.appTitle;
                 return Text(
                   text,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -63,7 +67,7 @@ class AboutDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('CLOSE'),
+          child: Text(l10n.close),
         ),
       ],
     );

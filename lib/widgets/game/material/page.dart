@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:classic_15_puzzle/config/ui.dart';
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/theme/app_radii.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
 import 'package:classic_15_puzzle/theme/app_typography.dart';
+import 'package:classic_15_puzzle/theme/tile_theme.dart';
 import 'package:classic_15_puzzle/widgets/game/material/sheets.dart';
 import 'package:classic_15_puzzle/widgets/game/board.dart';
 import 'package:classic_15_puzzle/widgets/shared/ad_banner_slot.dart';
@@ -15,6 +17,8 @@ import 'package:classic_15_puzzle/widgets/shared/stat_card.dart';
 import 'package:classic_15_puzzle/widgets/game/hall_of_fame.dart';
 import 'package:classic_15_puzzle/widgets/game/presenter/main.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
+import 'package:classic_15_puzzle/widgets/onboarding/tutorial_dialog.dart';
+import 'package:classic_15_puzzle/widgets/util/photo_theme_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_service.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +43,10 @@ class GameMaterialPageState extends State<GameMaterialPage> {
   bool _isAdsRemoved = false;
   AppLifecycleReactor? _appLifecycleReactor;
   AppOpenAdManager? _appOpenAdManager;
-  StreamSubscription<PurchaseFeedback>? _purchaseFeedbackSubscription;
+  StreamSubscription<PurchaseFeedbackEvent>? _purchaseFeedbackSubscription;
+
+  ui.Image? _photoImage;
+  String? _decodedPhotoFilename;
 
   @override
   void didChangeDependencies() {
@@ -50,46 +57,98 @@ class GameMaterialPageState extends State<GameMaterialPage> {
     _purchaseFeedbackSubscription ??=
         purchase?.feedback.listen(_showPurchaseFeedback);
 
-    if (_lastKnownAdsRemoved == isAdsRemoved) return;
-    _lastKnownAdsRemoved = isAdsRemoved;
-    _isAdsRemoved = isAdsRemoved;
+    if (_lastKnownAdsRemoved != isAdsRemoved) {
+      _lastKnownAdsRemoved = isAdsRemoved;
+      _isAdsRemoved = isAdsRemoved;
 
-    if (isAdsRemoved) {
-      _disposeAds();
-    } else {
-      _initAds();
+      if (isAdsRemoved) {
+        _disposeAds();
+      } else {
+        _initAds();
+      }
     }
+
+    final config = ConfigUiContainer.of(context);
+    final isThemePackOwned = purchase?.isThemePackOwned ?? false;
+    final wantsPhoto = isThemePackOwned && (config?.isPhotoModeEnabled ?? false);
+    _ensurePhotoDecoded(wantsPhoto ? config?.photoFilename : null);
   }
 
-  void _showPurchaseFeedback(PurchaseFeedback feedback) {
+  /// Decodes the saved photo-mode image once per distinct filename, so it
+  /// isn't re-decoded on every rebuild. Falls back to Classic (with a
+  /// one-shot message) if the saved file is missing or corrupt.
+  void _ensurePhotoDecoded(String? filename) {
+    if (filename == null) {
+      if (_photoImage != null || _decodedPhotoFilename != null) {
+        setState(() {
+          _photoImage = null;
+          _decodedPhotoFilename = null;
+        });
+      }
+      return;
+    }
+    if (_decodedPhotoFilename == filename) return;
+    _decodedPhotoFilename = filename;
+
+    PhotoThemeManager.decodeSavedPhoto(filename).then((image) {
+      if (!mounted || _decodedPhotoFilename != filename) return;
+      if (image == null) {
+        _decodedPhotoFilename = null;
+        ConfigUiContainer.of(context)?.setPhotoMode(false, save: true);
+        _showSnackBarMessage(
+          AppLocalizations.of(context)!.photoLoadFailedMessage,
+        );
+        return;
+      }
+      setState(() {
+        _photoImage = image;
+      });
+    });
+  }
+
+  void _showSnackBarMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(_purchaseFeedbackMessage(feedback))));
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _purchaseFeedbackMessage(PurchaseFeedback feedback) {
-    switch (feedback) {
+  void _showPurchaseFeedback(PurchaseFeedbackEvent event) {
+    if (!mounted) return;
+    _showSnackBarMessage(_purchaseFeedbackMessage(event));
+  }
+
+  String _purchaseFeedbackMessage(PurchaseFeedbackEvent event) {
+    final l10n = AppLocalizations.of(context)!;
+    final productName = switch (event.product) {
+      PurchaseProduct.removeAds => l10n.productNameRemoveAds,
+      PurchaseProduct.themePack => l10n.productNameThemePack,
+      null => l10n.productNameGeneric,
+    };
+
+    switch (event.type) {
       case PurchaseFeedback.storeUnavailable:
-        return 'The App Store is unavailable right now. Please try again later.';
+        return l10n.storeUnavailableMessage;
       case PurchaseFeedback.productUnavailable:
-        return 'Remove Ads is not available right now. Please try again later.';
+        return l10n.productUnavailableMessage(productName);
       case PurchaseFeedback.purchasePending:
-        return 'Your purchase is pending approval.';
+        return l10n.purchasePendingMessage;
       case PurchaseFeedback.purchaseCancelled:
-        return 'Purchase cancelled.';
+        return l10n.purchaseCancelledMessage;
       case PurchaseFeedback.purchaseFailed:
-        return 'Purchase failed. Please try again.';
+        return l10n.purchaseFailedMessage;
       case PurchaseFeedback.purchaseSuccess:
-        return 'Ads removed. Thank you for your support!';
+        return event.product == PurchaseProduct.themePack
+            ? l10n.themePackPurchaseSuccessMessage
+            : l10n.removeAdsPurchaseSuccessMessage;
       case PurchaseFeedback.alreadyOwned:
-        return 'You already own Remove Ads.';
+        return l10n.alreadyOwnedMessage(productName);
       case PurchaseFeedback.restoreSuccess:
-        return 'Purchase restored. Ads removed.';
+        return l10n.restoreSuccessMessage(productName);
       case PurchaseFeedback.restoreEmpty:
-        return 'No previous purchase found to restore.';
+        return l10n.restoreEmptyMessage;
       case PurchaseFeedback.restoreFailed:
-        return 'Restore failed. Please try again.';
+        return l10n.restoreFailedMessage;
     }
   }
 
@@ -156,6 +215,7 @@ class GameMaterialPageState extends State<GameMaterialPage> {
     }
     _appOpenAdManager?.dispose();
     _ad?.dispose();
+    _photoImage?.dispose();
     _boardFocus.dispose();
     super.dispose();
   }
@@ -168,15 +228,45 @@ class GameMaterialPageState extends State<GameMaterialPage> {
 
     if (_firstTime) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(seconds: 1), () {
-          presenter.play();
-        });
+        _handleFirstFrame(presenter);
       });
       _firstTime = false;
     }
 
+    return _buildScaffold(context, presenter, isIOS, boardWidget);
+  }
+
+  /// Shows the first-run tutorial once (persisted, not per-instance), then
+  /// falls into the existing delayed auto-play behavior either way.
+  Future<void> _handleFirstFrame(GamePresenterWidgetState presenter) async {
+    final config = ConfigUiContainer.of(context);
+    if (config != null && !config.hasSeenTutorial) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => const TutorialDialog(),
+      );
+      if (mounted) {
+        ConfigUiContainer.of(context)?.setHasSeenTutorial(true, save: true);
+      }
+    }
+
+    if (!mounted) return;
+    await Future<void>.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      presenter.play();
+    }
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    GamePresenterWidgetState presenter,
+    bool isIOS,
+    Widget boardWidget,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
     final appBar = AppBar(
-      title: Text('Classic 15', style: AppTypography.appBarTitle(context)),
+      title:
+          Text(l10n.gameAppBarTitle, style: AppTypography.appBarTitle(context)),
       elevation: 0,
       centerTitle: isIOS,
       backgroundColor:
@@ -184,14 +274,14 @@ class GameMaterialPageState extends State<GameMaterialPage> {
       flexibleSpace: isIOS
           ? ClipRect(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(color: Colors.transparent),
               ),
             )
           : null,
       actions: [
         Tooltip(
-          message: 'Hall of Fame',
+          message: l10n.hallOfFameTitle,
           child: IconButton(
             onPressed: () {
               showDialog(
@@ -205,7 +295,7 @@ class GameMaterialPageState extends State<GameMaterialPage> {
           ),
         ),
         Tooltip(
-          message: 'Settings',
+          message: l10n.settingsTitle,
           child: IconButton(
             onPressed: () {
               HapticFeedback.selectionClick();
@@ -244,7 +334,7 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                     children: <Widget>[
                       Expanded(
                         child: StatCard(
-                          label: 'TIME',
+                          label: l10n.timeLabel,
                           icon: Icons.timer_rounded,
                           valueChild: LiveTimerText(
                             getElapsedMs: () => presenter.elapsedMs,
@@ -256,7 +346,7 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: StatCard(
-                          label: 'MOVES',
+                          label: l10n.movesLabel,
                           value: presenter.steps.toString(),
                           icon: Icons.numbers_rounded,
                         ),
@@ -269,7 +359,7 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                     children: <Widget>[
                       GameActionButton(
                         icon: Icons.lightbulb_outline_rounded,
-                        tooltip: 'Hint',
+                        tooltip: l10n.hintTooltip,
                         isLoading: presenter.isSolving,
                         onPressed: () {
                           HapticFeedback.lightImpact();
@@ -279,7 +369,7 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                       const SizedBox(width: AppSpacing.md),
                       GameActionButton(
                         icon: Icons.refresh_rounded,
-                        tooltip: 'New game',
+                        tooltip: l10n.newGameTooltip,
                         onPressed: () {
                           HapticFeedback.mediumImpact();
                           presenter.play();
@@ -310,6 +400,14 @@ class GameMaterialPageState extends State<GameMaterialPage> {
     final presenter = GamePresenterWidget.of(context);
     final config = ConfigUiContainer.of(context);
     final colorScheme = Theme.of(context).colorScheme;
+
+    final isThemePackOwned =
+        PurchaseContainer.of(context)?.isThemePackOwned ?? false;
+    final effectiveTheme = isThemePackOwned
+        ? TileTheme.byId(config?.selectedTileThemeId ?? TileThemeId.classic)
+        : TileTheme.classic;
+    final isPhotoActive =
+        isThemePackOwned && (config?.isPhotoModeEnabled ?? false);
 
     return Center(
       child: Container(
@@ -365,6 +463,8 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                     config?.isSpeedRunModeEnabled ?? false,
                 board: presenter.board,
                 size: puzzleSize,
+                theme: effectiveTheme,
+                photoImage: isPhotoActive ? _photoImage : null,
                 onTap: (point) => presenter.tap(point: point),
               ),
             );

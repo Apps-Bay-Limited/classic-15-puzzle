@@ -1,0 +1,200 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Classic 15 Puzzle",
+  "@appTitle": {"description": "The app's display name."},
+
+  "close": "CLOSE",
+  "@close": {"description": "Button that closes a dialog."},
+
+  "aboutTitle": "About",
+  "@aboutTitle": {"description": "Title of the About dialog, and the row that opens it from Settings."},
+
+  "aboutDescription1": "Classic 15 Puzzle is a premium, open-source puzzle experience. It features beautiful animations, haptic feedback, and a clean interface.",
+  "aboutDescription2": "Compete with friends online and track your best times.",
+  "aboutJoinDevelopment": "Join development",
+  "aboutSendBugReport": "Send bug report",
+
+  "aboutVersion": "Version {version} ({buildNumber})",
+  "@aboutVersion": {
+    "description": "App version shown at the bottom of the About dialog.",
+    "placeholders": {
+      "version": {"type": "String"},
+      "buildNumber": {"type": "String"}
+    }
+  },
+
+  "tileLabel": "Tile {number}",
+  "@tileLabel": {
+    "description": "Accessibility label for a numbered puzzle tile.",
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  },
+  "emptyTileLabel": "Empty tile",
+
+  "hallOfFameTitle": "Hall of Fame",
+  "@hallOfFameTitle": {"description": "Title of the Hall of Fame dialog, and the tooltip on the button that opens it."},
+
+  "gridSizeLabel": "{size}x{size}",
+  "@gridSizeLabel": {
+    "description": "Compact grid-size label, e.g. 4x4.",
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+
+  "gridSizeSemanticsLabel": "{size}x{size} grid",
+  "@gridSizeSemanticsLabel": {
+    "description": "Accessibility label for a grid-size selector tile.",
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+
+  "noGamesYet": "No games yet",
+  "solveToSeeRecords": "Solve a puzzle to see your records here",
+  "bestTimeLabel": "BEST TIME",
+  "minMovesLabel": "MIN MOVES",
+  "noDataPlaceholder": "--",
+  "recentLogLabel": "RECENT LOG",
+
+  "recentLogTimestamp": "{day}/{month} {hour}:{minute}",
+  "@recentLogTimestamp": {
+    "description": "Compact date/time shown next to a recent result.",
+    "placeholders": {
+      "day": {"type": "String"},
+      "month": {"type": "String"},
+      "hour": {"type": "String"},
+      "minute": {"type": "String"}
+    }
+  },
+
+  "movesCount": "{steps} moves",
+  "@movesCount": {
+    "description": "Number of moves used to solve a puzzle.",
+    "placeholders": {
+      "steps": {"type": "String"}
+    }
+  },
+
+  "photoLoadFailedMessage": "That saved photo couldn't be loaded. Switched back to Classic.",
+
+  "productNameRemoveAds": "Remove Ads",
+  "productNameThemePack": "Theme Pack",
+  "productNameGeneric": "That purchase",
+
+  "storeUnavailableMessage": "The App Store is unavailable right now. Please try again later.",
+
+  "productUnavailableMessage": "{productName} is not available right now. Please try again later.",
+  "@productUnavailableMessage": {
+    "placeholders": {
+      "productName": {"type": "String"}
+    }
+  },
+
+  "purchasePendingMessage": "Your purchase is pending approval.",
+  "purchaseCancelledMessage": "Purchase cancelled.",
+  "purchaseFailedMessage": "Purchase failed. Please try again.",
+  "themePackPurchaseSuccessMessage": "Theme Pack unlocked! Enjoy the new themes and photo mode.",
+  "removeAdsPurchaseSuccessMessage": "Ads removed. Thank you for your support!",
+
+  "alreadyOwnedMessage": "You already own {productName}.",
+  "@alreadyOwnedMessage": {
+    "placeholders": {
+      "productName": {"type": "String"}
+    }
+  },
+
+  "restoreSuccessMessage": "{productName} restored.",
+  "@restoreSuccessMessage": {
+    "placeholders": {
+      "productName": {"type": "String"}
+    }
+  },
+
+  "restoreEmptyMessage": "No previous purchase found to restore.",
+  "restoreFailedMessage": "Restore failed. Please try again.",
+
+  "gameAppBarTitle": "Classic 15",
+  "settingsTitle": "Settings",
+  "@settingsTitle": {"description": "Title of the Settings sheet, and the tooltip on the button that opens it."},
+
+  "timeLabel": "TIME",
+  "movesLabel": "MOVES",
+  "hintTooltip": "Hint",
+  "newGameTooltip": "New game",
+
+  "settingsSubtitle": "Customize your puzzle experience",
+  "gridSizeSectionHeader": "GRID SIZE",
+  "darkModeLabel": "Dark mode",
+  "speedRunModeLabel": "Speed run mode",
+  "speedRunModeSubtitle": "Faster animations, tap-only tiles",
+  "soundEffectsLabel": "Sound effects",
+
+  "adsRemovedTitle": "Ads removed",
+  "adsRemovedSubtitle": "Thank you for supporting the app!",
+  "removeAdsTitle": "Remove Ads",
+  "removeAdsSubtitle": "Remove ads permanently from this app.",
+  "restorePurchasesTitle": "Restore Purchases",
+  "unavailableLabel": "Unavailable",
+
+  "themesSectionHeader": "THEMES",
+  "unlockThemesTitle": "Unlock Themes",
+  "unlockThemesSubtitle": "Extra tile palettes + photo puzzle mode.",
+  "photoModeTitle": "Photo Mode",
+  "photoModeSubtitle": "Turn a photo into your puzzle.",
+
+  "themeSwatchLabel": "{themeName} theme",
+  "@themeSwatchLabel": {
+    "placeholders": {
+      "themeName": {"type": "String"}
+    }
+  },
+
+  "themeSwatchLockedLabel": "{themeName} theme, locked",
+  "@themeSwatchLockedLabel": {
+    "placeholders": {
+      "themeName": {"type": "String"}
+    }
+  },
+
+  "themeNameClassic": "Classic",
+  "themeNameMidnight": "Midnight",
+  "themeNameSunset": "Sunset",
+  "themeNameMint": "Mint",
+
+  "tutorialStep1Title": "Slide to solve",
+  "tutorialStep1Description": "Tap a tile next to the empty space to slide it into place. Arrange every tile in order to win.",
+  "tutorialStep2Title": "Stuck? Get a hint",
+  "tutorialStep2Description": "Tap the hint button anytime to see the best next move.",
+  "tutorialStep3Title": "Make it yours",
+  "tutorialStep3Description": "Open Settings to change the grid size, tile themes, sound, and more.",
+  "skipButton": "SKIP",
+  "nextButton": "NEXT",
+  "getStartedButton": "GET STARTED",
+
+  "shareButton": "SHARE",
+
+  "shareText": "I solved the Classic 15 Puzzle {size}x{size} in {time} with {steps} moves!",
+  "@shareText": {
+    "description": "Text shared to the OS share sheet after winning.",
+    "placeholders": {
+      "size": {"type": "String"},
+      "time": {"type": "String"},
+      "steps": {"type": "String"}
+    }
+  },
+
+  "rankingsButton": "RANKINGS",
+  "victoryTitle": "Magnificent!",
+
+  "victoryDescription": "You completed the {size}x{size} puzzle in record time.",
+  "@victoryDescription": {
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+
+  "advertisementLabel": "ADVERTISEMENT"
+}
