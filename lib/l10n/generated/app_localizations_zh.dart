@@ -253,6 +253,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unavailableLabel => '不可用';
 
   @override
+  String get privacyOptionsTitle => '隐私选项';
+
+  @override
   String get themesSectionHeader => '主题';
 
   @override
@@ -586,6 +589,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get unavailableLabel => '無法使用';
+
+  @override
+  String get privacyOptionsTitle => '隱私選項';
 
   @override
   String get themesSectionHeader => '主題';

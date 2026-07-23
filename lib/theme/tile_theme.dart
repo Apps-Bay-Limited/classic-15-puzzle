@@ -8,43 +8,47 @@ enum TileThemeId { classic, midnight, sunset, mint }
 /// there's no way to sell it — see [PurchaseService]). Display names are
 /// localized separately (see `themeDisplayName` in sheets.dart) since this
 /// model has no [BuildContext]/l10n access.
+///
+/// Each palette is a single [color]. A tile in its solved position fills
+/// solid with [color] and a white number; any other tile shows a light wash
+/// of [color] ([unmatchedBackground]) with [color] as the number — see
+/// `ChipWidget`/`BoardWidget._tileColors`.
 class TileTheme {
   final TileThemeId id;
-  final Color backgroundColor;
-  final Color textColor;
+  final Color color;
 
   const TileTheme({
     required this.id,
-    required this.backgroundColor,
-    required this.textColor,
+    required this.color,
   });
 
   static const classic = TileTheme(
     id: TileThemeId.classic,
-    backgroundColor: AppColors.tileFill,
-    textColor: AppColors.tileText,
+    color: AppColors.tileFill,
   );
 
   static const midnight = TileTheme(
     id: TileThemeId.midnight,
-    backgroundColor: Color(0xFF3B4B6B),
-    textColor: Color(0xFFE8ECF5),
+    color: Color(0xFF3B4B6B),
   );
 
   static const sunset = TileTheme(
     id: TileThemeId.sunset,
-    backgroundColor: Color(0xFFE8664A),
-    textColor: Color(0xFFFFF3EC),
+    color: Color(0xFFE8664A),
   );
 
   static const mint = TileTheme(
     id: TileThemeId.mint,
-    backgroundColor: Color(0xFF7FC7A4),
-    textColor: Color(0xFF1E3D30),
+    color: Color(0xFF3F8F68),
   );
 
   static const List<TileTheme> all = [classic, midnight, sunset, mint];
 
   static TileTheme byId(TileThemeId id) =>
       all.firstWhere((theme) => theme.id == id, orElse: () => classic);
+
+  /// Light wash used for a tile that isn't in its solved position yet. Left
+  /// translucent so `ChipWidget` alpha-blends it over the ambient Material
+  /// surface color, which already adapts to light/dark mode.
+  Color get unmatchedBackground => color.withValues(alpha: 0.16);
 }

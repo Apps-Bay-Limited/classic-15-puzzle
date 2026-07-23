@@ -264,6 +264,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get unavailableLabel => 'Indisponible';
 
   @override
+  String get privacyOptionsTitle => 'Options de confidentialité';
+
+  @override
   String get themesSectionHeader => 'THÈMES';
 
   @override

@@ -8,7 +8,6 @@ import 'package:flutter/material.dart' hide Chip;
 class ChipWidget extends StatefulWidget {
   final String? text;
   final VoidCallback? onPressed;
-  final Color overlayColor;
   final Color backgroundColor;
   final Color fontColor;
   final double fontSize;
@@ -21,7 +20,6 @@ class ChipWidget extends StatefulWidget {
 
   const ChipWidget(
     this.text,
-    this.overlayColor,
     this.backgroundColor,
     this.fontColor,
     this.fontSize, {
@@ -86,7 +84,6 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
       color = color.withValues(alpha: 0.7);
     }
     color = Color.alphaBlend(widget.backgroundColor, color);
-    color = Color.alphaBlend(widget.overlayColor, color);
 
     final photoImage = widget.photoImage;
     final photoSrcRect = widget.photoSrcRect;

@@ -526,6 +526,12 @@ abstract class AppLocalizations {
   /// **'Unavailable'**
   String get unavailableLabel;
 
+  /// Settings row that reopens the ad-consent (UMP) privacy choices form. Only shown where a privacy-options entry point is required (e.g. EEA/UK).
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Options'**
+  String get privacyOptionsTitle;
+
   /// No description provided for @themesSectionHeader.
   ///
   /// In en, this message translates to:

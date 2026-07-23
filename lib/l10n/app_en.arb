@@ -203,6 +203,8 @@
   "removeAdsSubtitle": "Remove ads permanently from this app.",
   "restorePurchasesTitle": "Restore Purchases",
   "unavailableLabel": "Unavailable",
+  "privacyOptionsTitle": "Privacy Options",
+  "@privacyOptionsTitle": {"description": "Settings row that reopens the ad-consent (UMP) privacy choices form. Only shown where a privacy-options entry point is required (e.g. EEA/UK)."},
 
   "themesSectionHeader": "THEMES",
   "unlockThemesTitle": "Unlock Themes",

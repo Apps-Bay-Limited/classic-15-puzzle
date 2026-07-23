@@ -36,10 +36,21 @@ android {
     defaultConfig {
         applicationId = "com.appsbay.classic_15_puzzle"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 1
         versionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
         multiDexEnabled = true
+
+        // Base/fallback for any build type without its own override below —
+        // in particular "profile", which Flutter's Gradle plugin creates via
+        // initWith(release) at apply time (too late for a static `profile {}`
+        // block here) and which AGP's initWith does not carry manifestPlaceholders
+        // into, so without this default a profile build fails manifest merging.
+        manifestPlaceholders["AdMobAppId"] = admobProperties.getProperty("AdMobAppId") ?: "ca-app-pub-3940256099942544~3347511713"
+        buildConfigField("String", "AD_BANNER_UNIT_ID", "\"${admobProperties.getProperty("AdBannerUnitId") ?: ""}\"")
+        buildConfigField("String", "AD_OPEN_UNIT_ID", "\"${admobProperties.getProperty("AdOpenUnitId") ?: ""}\"")
+        buildConfigField("String", "AD_INTERSTITIAL_UNIT_ID", "\"${admobProperties.getProperty("AdInterstitialUnitId") ?: ""}\"")
+        buildConfigField("String", "AD_REWARDED_UNIT_ID", "\"${admobProperties.getProperty("AdRewardedUnitId") ?: ""}\"")
     }
 
     buildFeatures {

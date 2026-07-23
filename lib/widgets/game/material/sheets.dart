@@ -14,6 +14,7 @@ import 'package:classic_15_puzzle/widgets/util/theme_unlock_container.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// Full-page settings screen, pushed onto the navigator so it gets a real
 /// back button (a navigation stack) and its title sits below the status bar
@@ -230,6 +231,7 @@ class SettingsPage extends StatelessWidget {
               const _RemoveAdsSection(),
               const SizedBox(height: AppSpacing.sm),
               const _ThemesSection(),
+              const _PrivacyOptionsRow(),
             ],
           ),
         ),
@@ -361,6 +363,57 @@ class _RemoveAdsSection extends StatelessWidget {
         ),
         if (kDebugMode) _DebugResetIapTile(purchase: purchase),
       ],
+    );
+  }
+}
+
+/// Reopens the UMP ad-consent choices form. Only shown when the SDK reports
+/// a privacy-options entry point is actually required (e.g. the user is in
+/// the EEA/UK and has previously made a consent choice) — required by
+/// Google's Consent Management Platform policy.
+class _PrivacyOptionsRow extends StatefulWidget {
+  const _PrivacyOptionsRow();
+
+  @override
+  State<_PrivacyOptionsRow> createState() => _PrivacyOptionsRowState();
+}
+
+class _PrivacyOptionsRowState extends State<_PrivacyOptionsRow> {
+  bool _isRequired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ConsentInformation.instance.getPrivacyOptionsRequirementStatus().then((status) {
+      if (mounted) {
+        setState(() {
+          _isRequired = status == PrivacyOptionsRequirementStatus.required;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isRequired) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Semantics(
+      button: true,
+      label: l10n.privacyOptionsTitle,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.privacy_tip_rounded, color: colorScheme.primary),
+        title: Text(l10n.privacyOptionsTitle,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          ConsentForm.showPrivacyOptionsForm((FormError? formError) {});
+        },
+      ),
     );
   }
 }
@@ -614,7 +667,7 @@ class _ThemeSwatch extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: theme.backgroundColor,
+                color: theme.color,
                 borderRadius: BorderRadius.circular(AppRadii.sm),
                 border: isSelected
                     ? Border.all(color: colorScheme.primary, width: 3)
@@ -622,11 +675,12 @@ class _ThemeSwatch extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: isLocked
-                  ? Icon(Icons.lock_rounded, color: theme.textColor, size: 20)
-                  : Text(
+                  ? const Icon(Icons.lock_rounded,
+                      color: Colors.white, size: 20)
+                  : const Text(
                       '15',
                       style: TextStyle(
-                        color: theme.textColor,
+                        color: Colors.white,
                         fontWeight: FontWeight.w800,
                       ),
                     ),

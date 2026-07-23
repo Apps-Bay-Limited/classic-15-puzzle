@@ -255,6 +255,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get unavailableLabel => '利用不可';
 
   @override
+  String get privacyOptionsTitle => 'プライバシー設定';
+
+  @override
   String get themesSectionHeader => 'テーマ';
 
   @override

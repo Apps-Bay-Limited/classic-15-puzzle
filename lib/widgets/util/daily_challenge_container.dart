@@ -7,8 +7,9 @@ const String _prefsKeyStreak = 'daily::streak';
 const String _prefsKeyBestStreak = 'daily::best_streak';
 
 /// The grid size every daily challenge uses. Fixed so that everyone's board —
-/// and therefore everyone's time — is comparable.
-const int dailyChallengeBoardSize = 4;
+/// and therefore everyone's time — is comparable. Kept at 3x3 (8-puzzle) to
+/// keep the daily challenge quick and approachable.
+const int dailyChallengeBoardSize = 3;
 
 /// Identifies a day as `yyyymmdd` in UTC, so the challenge rolls over at the
 /// same instant worldwide and two players in different time zones are always

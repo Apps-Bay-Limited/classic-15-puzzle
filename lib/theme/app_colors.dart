@@ -7,9 +7,9 @@ abstract final class AppColors {
   static const darkSurface = Color(0xFF121212);
   static const splash = Color(0xFFFAFAFA);
 
-  /// Distinctive puzzle tile palette — preserved from the original design.
-  static const tileFill = Color(0xffF4B17E);
-  static const tileText = Color(0xff786D64);
+  /// Distinctive puzzle tile palette — a deeper caramel than the original
+  /// peach so white numbers stay legible when a tile fills solid on match.
+  static const tileFill = Color(0xFFB8712F);
 
   /// Accent colors derived from the warm brand palette.
   static const accentGold = Color(0xFFFFB300);

@@ -22,18 +22,11 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  // The ads SDK is always initialized, even for Remove Ads purchasers —
-  // rewarded ads (used to unlock themes/photo mode) are opt-in and offered
-  // regardless of that purchase; only the banner/interstitial/app-open ad
-  // surfaces are skipped for them, gated separately at their call sites.
-  await AdsManager.initialize();
-  MobileAds.instance.initialize();
+  _requestConsentAndInitializeAds();
 
   Future.delayed(const Duration(seconds: 1), () {
     AppTrackingTransparency.requestTrackingAuthorization();
   });
-
-  AdsManager.debugPrintID();
 
   InAppReviewHelper.checkAndAskForReview();
 
@@ -52,6 +45,53 @@ void main() async {
       ),
     );
   });
+}
+
+/// Gathers UMP consent (required under GDPR before an ad request is made to
+/// a user in the EEA/UK) and only initializes the Mobile Ads SDK — and
+/// therefore allows any ad to load — once that's resolved. The SDK decides
+/// internally whether a form is actually needed for this user; elsewhere in
+/// the world this resolves immediately with no form shown.
+void _requestConsentAndInitializeAds() {
+  final consentInfo = ConsentInformation.instance;
+  final params = ConsentRequestParameters(
+    consentDebugSettings: kDebugMode
+        ? ConsentDebugSettings(debugGeography: DebugGeography.debugGeographyEea)
+        : null,
+  );
+  consentInfo.requestConsentInfoUpdate(
+    params,
+    () {
+      ConsentForm.loadAndShowConsentFormIfRequired((FormError? formError) {
+        if (formError != null) {
+          debugPrint(
+              'Consent form error ${formError.errorCode}: ${formError.message}');
+        }
+        _initializeMobileAdsSdk();
+      });
+    },
+    (FormError error) {
+      debugPrint(
+          'Consent info update failed ${error.errorCode}: ${error.message}');
+      // Google's guidance: proceed with SDK init on failure rather than
+      // blocking ads entirely — the SDK still applies its own defaults.
+      _initializeMobileAdsSdk();
+    },
+  );
+}
+
+bool _mobileAdsInitialized = false;
+
+/// The ads SDK is always initialized, even for Remove Ads purchasers —
+/// rewarded ads (used to unlock themes/photo mode) are opt-in and offered
+/// regardless of that purchase; only the banner/interstitial/app-open ad
+/// surfaces are skipped for them, gated separately at their call sites.
+void _initializeMobileAdsSdk() async {
+  if (_mobileAdsInitialized) return;
+  _mobileAdsInitialized = true;
+  await AdsManager.initialize();
+  MobileAds.instance.initialize();
+  AdsManager.debugPrintID();
 }
 
 /// If the current platform is desktop, override the default platform to

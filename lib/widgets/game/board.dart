@@ -41,7 +41,6 @@ class BoardWidget extends StatefulWidget {
 
 class BoardWidgetState extends State<BoardWidget>
     with TickerProviderStateMixin {
-  static const _animColorOverlayTag = "color_overlay";
   static const _animMoveTag = "move";
   static const _animScaleTag = "scale";
 
@@ -50,7 +49,6 @@ class BoardWidgetState extends State<BoardWidget>
 
   static const int _animDurationBlinkHalf = 200;
   static const int _animDurationMove = 350;
-  static const int _animDurationColorOverlay = 1200;
   static const int _animDurationThemeChange = 350;
 
   static const double _kFriction = 0.015;
@@ -129,14 +127,15 @@ class BoardWidgetState extends State<BoardWidget>
       // A live palette swap while a game is in progress: the loop above
       // only re-colors chips on a full rebuild (grid size change), so
       // animate the transition explicitly here too instead of a hard cut.
-      _startThemeChangeAnimation(widget.theme);
+      _startThemeChangeAnimation(oldWidget.theme, widget.theme);
     }
   }
 
-  /// Tweens every chip's background/font color to [newTheme] instead of
-  /// swapping them instantly, so picking a new palette reads as a
-  /// transition rather than a jump-cut.
-  void _startThemeChangeAnimation(TileTheme newTheme) {
+  /// Tweens every chip's background/font color from [oldTheme] to
+  /// [newTheme] instead of swapping them instantly, so picking a new
+  /// palette reads as a transition rather than a jump-cut. Each chip keeps
+  /// lerping between its own matched/unmatched pair of colors throughout.
+  void _startThemeChangeAnimation(TileTheme oldTheme, TileTheme newTheme) {
     _themeChangeController?.dispose();
 
     final controller = AnimationController(
@@ -148,22 +147,22 @@ class BoardWidgetState extends State<BoardWidget>
 
     final animation =
         CurvedAnimation(parent: controller, curve: Curves.easeInOut);
-    final fromBackground = {
-      for (final chip in chips) chip: chip.backgroundColor
-    };
-    final fromFont = {for (final chip in chips) chip: chip.fontColor};
+    final unmatchedFontColor =
+        Theme.of(context).colorScheme.onSecondaryContainer;
 
     animation.addListener(() {
       setState(() {
         for (final chip in chips) {
+          final from = _tileColors(oldTheme, chip.matched, unmatchedFontColor);
+          final to = _tileColors(newTheme, chip.matched, unmatchedFontColor);
           chip.backgroundColor = Color.lerp(
-            fromBackground[chip],
-            newTheme.backgroundColor,
+            from.background,
+            to.background,
             animation.value,
           )!;
           chip.fontColor = Color.lerp(
-            fromFont[chip],
-            newTheme.textColor,
+            from.font,
+            to.font,
             animation.value,
           )!;
         }
@@ -172,7 +171,9 @@ class BoardWidgetState extends State<BoardWidget>
 
     controller.forward().then<void>((_) {
       if (_themeChangeController == controller) {
-        _themeChangeController = null;
+        setState(() {
+          _themeChangeController = null;
+        });
       }
       controller.dispose();
     });
@@ -197,14 +198,25 @@ class BoardWidgetState extends State<BoardWidget>
     final board = newBoard;
     if (oldBoard == null || board.chips.length != oldBoard.chips.length) {
       // The size of the board has been changed or it's the initial load.
+      // Dispose any animations still in flight from the old (differently-
+      // sized) chips list first — otherwise a pending controller's `.then()`
+      // fires later and calls _disposeAnimation with a chip.number that may
+      // no longer be a valid index into the freshly (and possibly smaller)
+      // rebuilt list below, e.g. starting the 3x3 daily challenge mid-move
+      // on a 4x4 game (see _disposeAnimation/_addAnimation).
+      for (final chip in chips) {
+        for (final controller in chip.animations.values) {
+          controller.dispose();
+        }
+        chip.animations.clear();
+      }
       setState(() {
         // Create our extras
         chips = board.chips.map((chip) {
           final x = chip.currentPoint.x / board.size;
           final y = chip.currentPoint.y / board.size;
           return _Chip(x, y, chip.currentPoint,
-              backgroundColor: widget.theme.backgroundColor,
-              fontColor: widget.theme.textColor);
+              matched: chip.currentPoint == chip.targetPoint);
         }).toList();
       });
       return;
@@ -212,15 +224,14 @@ class BoardWidgetState extends State<BoardWidget>
 
     for (var chip in board.chips) {
       final extra = chips[chip.number];
+      extra.matched = chip.currentPoint == chip.targetPoint;
       if (extra.currentPoint != chip.currentPoint || extra.touched) {
         // The chip has been moved somewhere...
         // animate the change!
-        final wasTouched = extra.touched;
         final wasCurrentPoint = extra.currentPoint;
         extra.touched = false;
         extra.currentPoint = chip.currentPoint;
-        _onChipChangePosition(chip, wasCurrentPoint, chip.currentPoint,
-            enableColorAnimation: !wasTouched);
+        _onChipChangePosition(chip, wasCurrentPoint, chip.currentPoint);
       }
     }
   }
@@ -230,9 +241,8 @@ class BoardWidgetState extends State<BoardWidget>
   void _onChipChangePosition(
     Chip chip,
     Point<int> from,
-    Point<int> to, {
-    bool enableColorAnimation = true,
-  }) {
+    Point<int> to,
+  ) {
     HapticFeedback.lightImpact();
     if (from.x != to.x && from.y != to.y) {
       // Chip can not be physically moved this way, play
@@ -241,8 +251,6 @@ class BoardWidgetState extends State<BoardWidget>
     } else {
       _startMoveAnimation(chip, to);
     }
-
-    if (enableColorAnimation) _startColorOverlayAnimation(chip);
   }
 
   void _startMoveAnimation(Chip chip, Point<int> point) {
@@ -353,36 +361,18 @@ class BoardWidgetState extends State<BoardWidget>
     startMoveAnimation(chip, point);
   }
 
-  void _startColorOverlayAnimation(Chip chip) {
-    final controller = AnimationController(
-      duration:
-          Duration(milliseconds: _animDurationMs(_animDurationColorOverlay)),
-      vsync: this,
-    );
-
-    final target = chips[chip.number];
-    final animation = CurvedAnimation(
-      parent: controller,
-      curve: Curves.easeOut,
-    );
-    animation.addListener(() {
-      final opacity = sin(sqrt(animation.value) * pi) * 0.15;
-      setState(() {
-        target.overlayColor = Color.fromRGBO(255, 255, 255, opacity);
-      });
-    });
-
-    _addAnimation(chip, _animColorOverlayTag, controller);
-    controller
-        .forward()
-        .then<void>((_) => _disposeAnimation(chip, _animColorOverlayTag));
-  }
-
   void _addAnimation(
     Chip chip,
     String tag,
     AnimationController controller,
   ) {
+    // The board may have been resized (e.g. starting the daily challenge
+    // mid-move on a differently-sized game) since this animation's chip
+    // number was captured — chips is rebuilt fresh on a size change, so a
+    // now-stale chip.number could fall outside it. Not our animation to
+    // manage anymore; just let the controller be disposed by the caller.
+    if (chip.number >= chips.length) return;
+
     final map = chips[chip.number].animations;
 
     // Replace previous animation.
@@ -394,6 +384,7 @@ class BoardWidgetState extends State<BoardWidget>
     Chip chip,
     String tag,
   ) {
+    if (chip.number >= chips.length) return;
     final map = chips[chip.number].animations;
     map.remove(tag)?.dispose();
   }
@@ -431,14 +422,18 @@ class BoardWidgetState extends State<BoardWidget>
     final board = widget.board;
     final extra = chips[chip.number];
 
-    // Tiles always render at their full theme color, regardless of how far
-    // they currently sit from their solved position. (An earlier design faded
-    // a tile toward the board color as its distance-from-home grew, but after
-    // a shuffle that left almost every tile washed out to the board color and
-    // made the numbers hard to read against some palettes.)
-    final overlayColor = extra.overlayColor;
-    final backgroundColor = extra.backgroundColor;
-    final fontColor = extra.fontColor;
+    // A tile in its solved position fills solid with the theme color and a
+    // white number; any other tile shows a light wash of the theme color
+    // with the same number color as the control buttons (see _tileColors).
+    // Mid palette-swap (_themeChangeController active), use the animation's
+    // lerped colors instead of recomputing live, so the crossfade doesn't jump.
+    final unmatchedFontColor =
+        Theme.of(context).colorScheme.onSecondaryContainer;
+    final colors = _themeChangeController != null
+        ? (background: extra.backgroundColor, font: extra.fontColor)
+        : _tileColors(widget.theme, extra.matched, unmatchedFontColor);
+    final backgroundColor = colors.background;
+    final fontColor = colors.font;
 
     final photoImage = widget.photoImage;
     final photoSrcRect = photoImage != null
@@ -460,7 +455,6 @@ class BoardWidgetState extends State<BoardWidget>
       opacity: extra.opacity,
       chip: (chipSize) => ChipWidget(
         text,
-        overlayColor,
         backgroundColor,
         fontColor,
         chipSize / 3 + 10,
@@ -711,6 +705,20 @@ class BoardWidgetState extends State<BoardWidget>
   }
 }
 
+/// The two colors a tile renders with: solid theme color + white number when
+/// it sits in its solved position, or a light theme-color wash + [unmatchedFontColor]
+/// (the same color as the control button icons) otherwise.
+({Color background, Color font}) _tileColors(
+  TileTheme theme,
+  bool matched,
+  Color unmatchedFontColor,
+) {
+  if (matched) {
+    return (background: theme.color, font: Colors.white);
+  }
+  return (background: theme.unmatchedBackground, font: unmatchedFontColor);
+}
+
 class _Chip {
   double x = 0;
   double y = 0;
@@ -725,9 +733,13 @@ class _Chip {
   /// midpoint position teleport.
   double opacity = 1;
 
-  Color backgroundColor = Colors.white;
+  /// Whether this chip currently sits in its solved position — determines
+  /// which of the two tile colors it renders with (see _tileColors).
+  bool matched;
 
-  Color overlayColor = Colors.white;
+  /// Only meaningful while a palette-switch animation is in flight; see
+  /// BoardWidgetState._buildChipWidget.
+  Color backgroundColor = Colors.white;
 
   Color fontColor = Colors.black;
 
@@ -740,7 +752,6 @@ class _Chip {
     this.y,
     this.currentPoint, {
     this.scale = 1,
-    required this.backgroundColor,
-    required this.fontColor,
+    required this.matched,
   });
 }

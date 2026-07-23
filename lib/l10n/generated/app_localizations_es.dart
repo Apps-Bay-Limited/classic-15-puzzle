@@ -265,6 +265,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get unavailableLabel => 'No disponible';
 
   @override
+  String get privacyOptionsTitle => 'Opciones de privacidad';
+
+  @override
   String get themesSectionHeader => 'TEMAS';
 
   @override

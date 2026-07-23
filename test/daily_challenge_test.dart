@@ -2,12 +2,55 @@ import 'dart:math';
 
 import 'package:classic_15_puzzle/data/board.dart';
 import 'package:classic_15_puzzle/domain/game.dart';
+import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
+import 'package:classic_15_puzzle/widgets/game/board.dart';
 import 'package:classic_15_puzzle/widgets/util/daily_challenge_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  group('BoardWidget resizing mid-animation', () {
+    // dailyChallengeBoardSize (3) is smaller than the default game size
+    // (4), so starting the daily challenge from an in-progress bigger game
+    // swaps BoardWidget's board for a smaller one on the same State. If a
+    // move animation from the bigger board is still in flight when that
+    // happens, its completion callback used to index the freshly (and now
+    // smaller) rebuilt chips list with a chip number from the old, bigger
+    // board — throwing a RangeError instead of just quietly finishing.
+    testWidgets(
+        'starting a smaller daily challenge mid-move on a bigger game does not throw',
+        (tester) async {
+      final board4 = Board.createNormal(4);
+      final adjacent = board4.blank.x > 0
+          ? Point<int>(board4.blank.x - 1, board4.blank.y)
+          : Point<int>(board4.blank.x + 1, board4.blank.y);
+      final movedBoard4 = Game.instance.tap(board4, point: adjacent);
+
+      Widget wrap(Board board) => MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BoardWidget(board: board, size: 300),
+            ),
+          );
+
+      await tester.pumpWidget(wrap(board4));
+      // Same size, one chip moved — starts a ~350ms move animation.
+      await tester.pumpWidget(wrap(movedBoard4));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Resize down to a 3x3 board mid-animation, as playDaily() does.
+      await tester.pumpWidget(wrap(Board.createNormal(dailyChallengeBoardSize)));
+
+      // Let the stale 4x4 animation's completion callback fire.
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('seeded shuffle', () {
     test('the same seed always produces the same board', () {
       final game = Game.instance;
