@@ -51,6 +51,7 @@ class BoardWidgetState extends State<BoardWidget>
   static const int _animDurationBlinkHalf = 200;
   static const int _animDurationMove = 350;
   static const int _animDurationColorOverlay = 1200;
+  static const int _animDurationThemeChange = 350;
 
   static const double _kFriction = 0.015;
 
@@ -78,6 +79,8 @@ class BoardWidgetState extends State<BoardWidget>
   }
 
   late List<_Chip> chips = [];
+
+  AnimationController? _themeChangeController;
 
   Function(double, double)? _onPanEndDelegate;
 
@@ -121,18 +124,64 @@ class BoardWidgetState extends State<BoardWidget>
       newBoard: widget.board,
       oldBoard: oldWidget.board,
     );
-    if (oldWidget.theme != widget.theme ||
-        oldWidget.photoImage != widget.photoImage) {
-      // A live theme/photo swap while a game is in progress: the loop above
-      // only re-colors chips on a full rebuild (grid size change), so do it
-      // explicitly here too.
+    if (oldWidget.theme != widget.theme) {
+      // A live palette swap while a game is in progress: the loop above
+      // only re-colors chips on a full rebuild (grid size change), so
+      // animate the transition explicitly here too instead of a hard cut.
+      _startThemeChangeAnimation(widget.theme);
+    }
+  }
+
+  /// Tweens every chip's background/font color to [newTheme] instead of
+  /// swapping them instantly, so picking a new palette reads as a
+  /// transition rather than a jump-cut.
+  void _startThemeChangeAnimation(TileTheme newTheme) {
+    _themeChangeController?.dispose();
+
+    final controller = AnimationController(
+      duration: Duration(milliseconds: _animDurationMs(_animDurationThemeChange)),
+      vsync: this,
+    );
+    _themeChangeController = controller;
+
+    final animation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
+    final fromBackground = {for (final chip in chips) chip: chip.backgroundColor};
+    final fromFont = {for (final chip in chips) chip: chip.fontColor};
+
+    animation.addListener(() {
       setState(() {
         for (final chip in chips) {
-          chip.backgroundColor = widget.theme.backgroundColor;
-          chip.fontColor = widget.theme.textColor;
+          chip.backgroundColor = Color.lerp(
+            fromBackground[chip],
+            newTheme.backgroundColor,
+            animation.value,
+          )!;
+          chip.fontColor = Color.lerp(
+            fromFont[chip],
+            newTheme.textColor,
+            animation.value,
+          )!;
         }
       });
+    });
+
+    controller.forward().then<void>((_) {
+      if (_themeChangeController == controller) {
+        _themeChangeController = null;
+      }
+      controller.dispose();
+    });
+  }
+
+  @override
+  void dispose() {
+    _themeChangeController?.dispose();
+    for (final chip in chips) {
+      for (final controller in chip.animations.values) {
+        controller.dispose();
+      }
     }
+    super.dispose();
   }
 
   void _performSetPrevBoard() =>
@@ -248,6 +297,10 @@ class BoardWidgetState extends State<BoardWidget>
         final scale = cos(animation.value * 2.0 * pi) / 2.0 + 0.5;
         setState(() {
           target.scale = scale;
+          // Fade alongside the shrink so the position teleport at the
+          // midpoint (see startMoveAnimation below) is masked by a
+          // vanish/reappear rather than just a scale-to-a-point pop.
+          target.opacity = scale;
         });
       });
 
@@ -404,6 +457,7 @@ class BoardWidgetState extends State<BoardWidget>
       x: extra.x,
       y: extra.y,
       scale: extra.scale,
+      opacity: extra.opacity,
       chip: (chipSize) => ChipWidget(
         text,
         overlayColor,
@@ -426,6 +480,7 @@ class BoardWidgetState extends State<BoardWidget>
     required double x,
     required double y,
     required double scale,
+    double opacity = 1,
     required Widget Function(double) chip,
   }) {
     final board = widget.board;
@@ -435,9 +490,12 @@ class BoardWidgetState extends State<BoardWidget>
       height: chipSize,
       left: x * widget.size,
       top: y * widget.size,
-      child: Transform.scale(
-        scale: scale,
-        child: chip(chipSize),
+      child: Opacity(
+        opacity: opacity,
+        child: Transform.scale(
+          scale: scale,
+          child: chip(chipSize),
+        ),
       ),
     );
   }
@@ -662,6 +720,10 @@ class _Chip {
   /// Current X and Y scale of the chip, used for a
   /// blink animation.
   double scale = 1;
+
+  /// Fades alongside [scale] during the blink animation, to mask its
+  /// midpoint position teleport.
+  double opacity = 1;
 
   Color backgroundColor = Colors.white;
 

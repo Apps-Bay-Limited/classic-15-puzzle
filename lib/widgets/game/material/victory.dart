@@ -1,6 +1,7 @@
 import 'package:classic_15_puzzle/data/result.dart';
 import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/play_games.dart';
+import 'package:classic_15_puzzle/theme/app_motion.dart';
 import 'package:classic_15_puzzle/theme/app_radii.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
 import 'package:classic_15_puzzle/theme/app_typography.dart';
@@ -24,11 +25,51 @@ class GameVictoryDialog extends StatefulWidget {
   State<GameVictoryDialog> createState() => _GameVictoryDialogState();
 }
 
-class _GameVictoryDialogState extends State<GameVictoryDialog> {
+class _GameVictoryDialogState extends State<GameVictoryDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _iconScale;
+  late final Animation<double> _statsIn;
+  bool _hasStartedEntranceAnimation = false;
+
   @override
   void initState() {
     super.initState();
     HapticFeedback.vibrate();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    // Icon bounces in first, stats fade/slide in as it settles.
+    _iconScale = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.65, curve: Curves.elasticOut),
+    );
+    _statsIn = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.35, 1.0, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery (via AppMotion) can only be read once dependencies are
+    // available, not in initState.
+    if (_hasStartedEntranceAnimation) return;
+    _hasStartedEntranceAnimation = true;
+    if (AppMotion.disableAnimations(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -76,7 +117,10 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
     }
 
     return AlertDialog(
-      icon: Icon(Icons.stars_rounded, size: 48, color: colorScheme.primary),
+      icon: ScaleTransition(
+        scale: _iconScale,
+        child: Icon(Icons.stars_rounded, size: 48, color: colorScheme.primary),
+      ),
       title: Text(
         l10n.victoryTitle,
         textAlign: TextAlign.center,
@@ -91,21 +135,30 @@ class _GameVictoryDialogState extends State<GameVictoryDialog> {
             style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                ResultStatItem(label: l10n.timeLabel, value: timeFormatted),
-                ResultStatItem(
-                  label: l10n.movesLabel,
-                  value: '${widget.result.steps}',
+          FadeTransition(
+            opacity: _statsIn,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.15),
+                end: Offset.zero,
+              ).animate(_statsIn),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
                 ),
-              ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: <Widget>[
+                    ResultStatItem(label: l10n.timeLabel, value: timeFormatted),
+                    ResultStatItem(
+                      label: l10n.movesLabel,
+                      value: '${widget.result.steps}',
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

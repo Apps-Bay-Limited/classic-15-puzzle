@@ -90,26 +90,33 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
 
     final photoImage = widget.photoImage;
     final photoSrcRect = widget.photoSrcRect;
-    final tileContent = photoImage != null && photoSrcRect != null
-        ? SizedBox.expand(
-            child: CustomPaint(
-              painter: _PhotoTilePainter(
-                image: photoImage,
-                srcRect: photoSrcRect,
+    // Cross-fades between the number and a photo slice, so toggling Photo
+    // Mode reads as a transition rather than a jump-cut.
+    final tileContent = AnimatedSwitcher(
+      duration: AppMotion.duration(context, 250),
+      child: photoImage != null && photoSrcRect != null
+          ? SizedBox.expand(
+              key: const ValueKey('photo'),
+              child: CustomPaint(
+                painter: _PhotoTilePainter(
+                  image: photoImage,
+                  srcRect: photoSrcRect,
+                ),
+              ),
+            )
+          : Center(
+              key: const ValueKey('text'),
+              child: Text(
+                widget.text ?? '',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: widget.fontSize,
+                  color: widget.fontColor,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
-          )
-        : Center(
-            child: Text(
-              widget.text ?? '',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: widget.fontSize,
-                color: widget.fontColor,
-                letterSpacing: -0.5,
-              ),
-            ),
-          );
+    );
 
     Widget content = Material(
       shape: shape,
