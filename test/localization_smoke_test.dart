@@ -28,12 +28,6 @@ void main() {
         // silently at runtime for a real user.
         expect(l10n.appTitle, isNotEmpty);
         expect(l10n.close, isNotEmpty);
-        expect(l10n.aboutTitle, isNotEmpty);
-        expect(l10n.aboutDescription1, isNotEmpty);
-        expect(l10n.aboutDescription2, isNotEmpty);
-        expect(l10n.aboutJoinDevelopment, isNotEmpty);
-        expect(l10n.aboutSendBugReport, isNotEmpty);
-        expect(l10n.aboutVersion('1.0.0', '1'), contains('1.0.0'));
         expect(l10n.tileLabel('3'), contains('3'));
         expect(l10n.emptyTileLabel, isNotEmpty);
         expect(l10n.hallOfFameTitle, isNotEmpty);
@@ -68,6 +62,7 @@ void main() {
         expect(l10n.timeLabel, isNotEmpty);
         expect(l10n.movesLabel, isNotEmpty);
         expect(l10n.hintTooltip, isNotEmpty);
+        expect(l10n.undoTooltip, isNotEmpty);
         expect(l10n.newGameTooltip, isNotEmpty);
         expect(l10n.settingsSubtitle, isNotEmpty);
         expect(l10n.gridSizeSectionHeader, isNotEmpty);

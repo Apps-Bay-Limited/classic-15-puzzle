@@ -7,23 +7,6 @@
   "close": "CLOSE",
   "@close": {"description": "Button that closes a dialog."},
 
-  "aboutTitle": "About",
-  "@aboutTitle": {"description": "Title of the About dialog, and the row that opens it from Settings."},
-
-  "aboutDescription1": "Classic 15 Puzzle is a premium, open-source puzzle experience. It features beautiful animations, haptic feedback, and a clean interface.",
-  "aboutDescription2": "Compete with friends online and track your best times.",
-  "aboutJoinDevelopment": "Join development",
-  "aboutSendBugReport": "Send bug report",
-
-  "aboutVersion": "Version {version} ({buildNumber})",
-  "@aboutVersion": {
-    "description": "App version shown at the bottom of the About dialog.",
-    "placeholders": {
-      "version": {"type": "String"},
-      "buildNumber": {"type": "String"}
-    }
-  },
-
   "tileLabel": "Tile {number}",
   "@tileLabel": {
     "description": "Accessibility label for a numbered puzzle tile.",
@@ -133,6 +116,7 @@
   "timeLabel": "TIME",
   "movesLabel": "MOVES",
   "hintTooltip": "Hint",
+  "undoTooltip": "Undo",
   "pauseTooltip": "Pause",
   "resumeTooltip": "Resume",
   "pausedTapToResumeLabel": "Paused — tap to resume",

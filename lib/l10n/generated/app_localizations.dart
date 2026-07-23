@@ -117,42 +117,6 @@ abstract class AppLocalizations {
   /// **'CLOSE'**
   String get close;
 
-  /// Title of the About dialog, and the row that opens it from Settings.
-  ///
-  /// In en, this message translates to:
-  /// **'About'**
-  String get aboutTitle;
-
-  /// No description provided for @aboutDescription1.
-  ///
-  /// In en, this message translates to:
-  /// **'Classic 15 Puzzle is a premium, open-source puzzle experience. It features beautiful animations, haptic feedback, and a clean interface.'**
-  String get aboutDescription1;
-
-  /// No description provided for @aboutDescription2.
-  ///
-  /// In en, this message translates to:
-  /// **'Compete with friends online and track your best times.'**
-  String get aboutDescription2;
-
-  /// No description provided for @aboutJoinDevelopment.
-  ///
-  /// In en, this message translates to:
-  /// **'Join development'**
-  String get aboutJoinDevelopment;
-
-  /// No description provided for @aboutSendBugReport.
-  ///
-  /// In en, this message translates to:
-  /// **'Send bug report'**
-  String get aboutSendBugReport;
-
-  /// App version shown at the bottom of the About dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'Version {version} ({buildNumber})'**
-  String aboutVersion(String version, String buildNumber);
-
   /// Accessibility label for a numbered puzzle tile.
   ///
   /// In en, this message translates to:
@@ -363,6 +327,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hint'**
   String get hintTooltip;
+
+  /// No description provided for @undoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undoTooltip;
 
   /// No description provided for @pauseTooltip.
   ///

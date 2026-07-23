@@ -399,6 +399,17 @@ class GameMaterialPageState extends State<GameMaterialPage> {
                         const SizedBox(width: AppSpacing.md),
                       ],
                       GameActionButton(
+                        icon: Icons.undo_rounded,
+                        tooltip: l10n.undoTooltip,
+                        onPressed: presenter.canUndo
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                presenter.undo();
+                              }
+                            : null,
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      GameActionButton(
                         icon: presenter.isManuallyPaused
                             ? Icons.play_arrow_rounded
                             : Icons.pause_rounded,

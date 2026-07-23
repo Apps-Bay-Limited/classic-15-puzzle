@@ -15,28 +15,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get close => 'CERRAR';
 
   @override
-  String get aboutTitle => 'Acerca de';
-
-  @override
-  String get aboutDescription1 =>
-      'Classic 15 Puzzle es una experiencia de rompecabezas premium y de código abierto. Cuenta con animaciones hermosas, retroalimentación háptica y una interfaz limpia.';
-
-  @override
-  String get aboutDescription2 =>
-      'Compite con amigos en línea y registra tus mejores tiempos.';
-
-  @override
-  String get aboutJoinDevelopment => 'Participar en el desarrollo';
-
-  @override
-  String get aboutSendBugReport => 'Enviar reporte de error';
-
-  @override
-  String aboutVersion(String version, String buildNumber) {
-    return 'Versión $version ($buildNumber)';
-  }
-
-  @override
   String tileLabel(String number) {
     return 'Ficha $number';
   }
@@ -169,6 +147,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get hintTooltip => 'Pista';
+
+  @override
+  String get undoTooltip => 'Deshacer';
 
   @override
   String get pauseTooltip => 'Pausa';

@@ -71,6 +71,13 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
   bool _isManuallyPaused = false;
 
+  /// Board snapshots from before each counted move, most recent last.
+  ///
+  /// Only moves made during an active game are pushed, so undo never rewinds
+  /// past the shuffle or disagrees with [steps]. Deliberately not persisted
+  /// with the rest of the game state — the stack resets on app restart.
+  final List<Board> _undoStack = [];
+
   int _tipTapCount = 0;
 
   final InterstitialAdManager _interstitialAdManager = InterstitialAdManager();
@@ -186,6 +193,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       _pausedMs = 0;
       _pauseStartedAt = null;
       _isManuallyPaused = false;
+      _undoStack.clear();
       _gameActive = true;
       board =
           game.shuffle(game.hardest(board), amount: board.size * board.size);
@@ -200,6 +208,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       _pausedMs = 0;
       _pauseStartedAt = null;
       _isManuallyPaused = false;
+      _undoStack.clear();
     });
   }
 
@@ -208,6 +217,30 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   bool get isGameActive => _gameActive;
 
   bool get isManuallyPaused => _isManuallyPaused;
+
+  /// Whether there's a counted move available to take back right now.
+  bool get canUndo =>
+      _gameActive &&
+      !_isManuallyPaused &&
+      !_isSolving &&
+      _undoStack.isNotEmpty;
+
+  /// Takes back the last counted move, restoring both the board and the step
+  /// count. The clock keeps running — undo costs time, not moves.
+  void undo() {
+    if (!canUndo) return;
+
+    final previous = _undoStack.removeLast();
+
+    if (ConfigUiContainer.of(context)?.isSoundEnabled ?? true) {
+      SoundManager.playMove();
+    }
+
+    setState(() {
+      board = previous;
+      if (steps > 0) steps -= 1;
+    });
+  }
 
   /// Pauses (blurring the board and freezing the timer) or resumes.
   /// A no-op if there's no active game to pause.
@@ -258,6 +291,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       _pausedMs = 0;
       _pauseStartedAt = null;
       _isManuallyPaused = false;
+      _undoStack.clear();
       _gameActive = false;
       board = _createBoard(size);
     });
@@ -278,6 +312,10 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
     setState(() {
       if (_gameActive && !isPlaying()) {
         time = DateTime.now().millisecondsSinceEpoch;
+      }
+
+      if (_gameActive) {
+        _undoStack.add(prevBoard);
       }
 
       board = nextBoard;
@@ -395,6 +433,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       time = timeStopped;
       _pausedMs = 0;
       _pauseStartedAt = null;
+      _undoStack.clear();
 
       Board boardFuture;
       if (keepActive) {

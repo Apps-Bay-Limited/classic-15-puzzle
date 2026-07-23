@@ -15,26 +15,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get close => '关闭';
 
   @override
-  String get aboutTitle => '关于';
-
-  @override
-  String get aboutDescription1 => '经典15拼图是一款精致的开源拼图游戏，拥有精美的动画、触感反馈和简洁的界面。';
-
-  @override
-  String get aboutDescription2 => '与好友一较高下，记录你的最佳成绩。';
-
-  @override
-  String get aboutJoinDevelopment => '参与开发';
-
-  @override
-  String get aboutSendBugReport => '反馈问题';
-
-  @override
-  String aboutVersion(String version, String buildNumber) {
-    return '版本 $version ($buildNumber)';
-  }
-
-  @override
   String tileLabel(String number) {
     return '方块 $number';
   }
@@ -157,6 +137,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get hintTooltip => '提示';
+
+  @override
+  String get undoTooltip => '撤销';
 
   @override
   String get pauseTooltip => '暂停';
@@ -311,26 +294,6 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get close => '關閉';
 
   @override
-  String get aboutTitle => '關於';
-
-  @override
-  String get aboutDescription1 => '經典15拼圖是一款精緻的開源拼圖遊戲，擁有精美的動畫、觸感回饋和簡潔的介面。';
-
-  @override
-  String get aboutDescription2 => '與好友一較高下，記錄你的最佳成績。';
-
-  @override
-  String get aboutJoinDevelopment => '參與開發';
-
-  @override
-  String get aboutSendBugReport => '回報問題';
-
-  @override
-  String aboutVersion(String version, String buildNumber) {
-    return '版本 $version（$buildNumber）';
-  }
-
-  @override
   String tileLabel(String number) {
     return '方塊 $number';
   }
@@ -453,6 +416,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get hintTooltip => '提示';
+
+  @override
+  String get undoTooltip => '復原';
 
   @override
   String get pauseTooltip => '暫停';

@@ -15,27 +15,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get close => '閉じる';
 
   @override
-  String get aboutTitle => 'このアプリについて';
-
-  @override
-  String get aboutDescription1 =>
-      'クラシック15パズルは、美しいアニメーション、触覚フィードバック、洗練されたインターフェースを備えた、プレミアムなオープンソースのパズル体験です。';
-
-  @override
-  String get aboutDescription2 => '友達とオンラインで競い合い、ベストタイムを記録しましょう。';
-
-  @override
-  String get aboutJoinDevelopment => '開発に参加する';
-
-  @override
-  String get aboutSendBugReport => '不具合を報告する';
-
-  @override
-  String aboutVersion(String version, String buildNumber) {
-    return 'バージョン $version ($buildNumber)';
-  }
-
-  @override
   String tileLabel(String number) {
     return 'タイル $number';
   }
@@ -160,6 +139,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get hintTooltip => 'ヒント';
+
+  @override
+  String get undoTooltip => '元に戻す';
 
   @override
   String get pauseTooltip => '一時停止';
