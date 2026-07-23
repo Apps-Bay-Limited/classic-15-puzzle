@@ -49,15 +49,16 @@ void main() {
         expect(l10n.movesCount('12'), contains('12'));
         expect(l10n.photoLoadFailedMessage, isNotEmpty);
         expect(l10n.productNameRemoveAds, isNotEmpty);
-        expect(l10n.productNameThemePack, isNotEmpty);
         expect(l10n.productNameGeneric, isNotEmpty);
         expect(l10n.storeUnavailableMessage, isNotEmpty);
         expect(l10n.productUnavailableMessage('X'), contains('X'));
         expect(l10n.purchasePendingMessage, isNotEmpty);
         expect(l10n.purchaseCancelledMessage, isNotEmpty);
         expect(l10n.purchaseFailedMessage, isNotEmpty);
-        expect(l10n.themePackPurchaseSuccessMessage, isNotEmpty);
         expect(l10n.removeAdsPurchaseSuccessMessage, isNotEmpty);
+        expect(l10n.rewardedAdUnavailableMessage, isNotEmpty);
+        expect(l10n.rewardedAdDismissedMessage, isNotEmpty);
+        expect(l10n.themesUnlockedMessage, isNotEmpty);
         expect(l10n.alreadyOwnedMessage('X'), contains('X'));
         expect(l10n.restoreSuccessMessage('X'), contains('X'));
         expect(l10n.restoreEmptyMessage, isNotEmpty);

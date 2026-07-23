@@ -58,6 +58,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String gridSizeSelectedSemanticsLabel(String size) {
+    return 'Grille ${size}x$size, sélectionnée';
+  }
+
+  @override
   String get noGamesYet => 'Aucune partie pour l\'instant';
 
   @override
@@ -95,9 +100,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productNameRemoveAds => 'Suppression des pubs';
 
   @override
-  String get productNameThemePack => 'Pack de thèmes';
-
-  @override
   String get productNameGeneric => 'Cet achat';
 
   @override
@@ -120,12 +122,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get purchaseFailedMessage => 'Échec de l\'achat. Veuillez réessayer.';
 
   @override
-  String get themePackPurchaseSuccessMessage =>
-      'Pack de thèmes débloqué ! Profitez des nouveaux thèmes et du mode photo.';
-
-  @override
   String get removeAdsPurchaseSuccessMessage =>
       'Publicités supprimées. Merci pour votre soutien !';
+
+  @override
+  String get rewardedAdUnavailableMessage =>
+      'Publicité indisponible pour le moment. Veuillez réessayer bientôt.';
+
+  @override
+  String get rewardedAdDismissedMessage =>
+      'Regardez la publicité jusqu\'au bout pour débloquer les thèmes et le mode photo.';
+
+  @override
+  String get themesUnlockedMessage =>
+      'Thèmes et mode photo débloqués. Profitez-en !';
 
   @override
   String alreadyOwnedMessage(String productName) {
@@ -160,6 +170,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hintTooltip => 'Indice';
 
   @override
+  String get pauseTooltip => 'Pause';
+
+  @override
+  String get resumeTooltip => 'Reprendre';
+
+  @override
+  String get pausedTapToResumeLabel => 'En pause — touchez pour reprendre';
+
+  @override
   String get newGameTooltip => 'Nouvelle partie';
 
   @override
@@ -177,6 +196,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get speedRunModeSubtitle =>
       'Animations plus rapides, déplacement au toucher uniquement';
+
+  @override
+  String get speedRunModeInfoTooltip => 'À propos du mode rapide';
+
+  @override
+  String get speedRunModeExplanation =>
+      'En mode rapide, touchez n\'importe quelle tuile pour la faire glisser vers l\'espace vide — inutile de toucher uniquement les tuiles directement adjacentes. Les animations sont aussi plus rapides, pour résoudre le puzzle le plus vite possible.';
 
   @override
   String get soundEffectsLabel => 'Effets sonores';

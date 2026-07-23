@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// Tonal icon button for secondary game actions (hint, refresh).
 class GameActionButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String tooltip;
   final bool isLoading;
 

@@ -32,6 +32,8 @@
 	<string>$(AD_OPEN_UNIT_ID)</string>
 	<key>AdInterstitialUnitId</key>
 	<string>$(AD_INTERSTITIAL_UNIT_ID)</string>
+	<key>AdRewardedUnitId</key>
+	<string>$(AD_REWARDED_UNIT_ID)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>

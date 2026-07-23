@@ -9,9 +9,9 @@ import 'fakes/fake_purchase_service.dart';
 void main() {
   Future<void> pumpSheet(WidgetTester tester, FakePurchaseService fake) async {
     // PurchaseContainer must wrap MaterialApp (as it does in main.dart), not
-    // the other way around: showModalBottomSheet pushes a new route as a
-    // sibling OverlayEntry inside the Navigator, so it only inherits
-    // ancestors that sit above MaterialApp/the Navigator itself.
+    // the other way around: the pushed SettingsPage route is a sibling route
+    // inside the Navigator, so it only inherits ancestors that sit above
+    // MaterialApp/the Navigator itself.
     await tester.pumpWidget(
       PurchaseContainer(
         service: fake,
@@ -23,12 +23,12 @@ void main() {
               body: Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (context) => createSettingsBottomSheet(
-                        context,
-                        onGridSizeSelected: (_) {},
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => SettingsPage(
+                          currentGridSize: 3,
+                          onGridSizeSelected: (_) {},
+                        ),
                       ),
                     );
                   },
@@ -59,6 +59,7 @@ void main() {
       expect(find.text(r'$2.99'), findsOneWidget);
       expect(find.text('Ads removed'), findsNothing);
 
+      await tester.ensureVisible(find.text('Remove Ads'));
       await tester.tap(find.text('Remove Ads'));
       await tester.pump();
       expect(fake.buyRemoveAdsCallCount, 1);
@@ -105,10 +106,10 @@ void main() {
 
       await pumpSheet(tester, fake);
 
-      expect(find.text('Reset IAP (Debug)'), findsOneWidget);
+      expect(find.text('Reset Remove Ads (Debug)'), findsOneWidget);
 
-      await tester.ensureVisible(find.text('Reset IAP (Debug)'));
-      await tester.tap(find.text('Reset IAP (Debug)'));
+      await tester.ensureVisible(find.text('Reset Remove Ads (Debug)'));
+      await tester.tap(find.text('Reset Remove Ads (Debug)'));
       await tester.pumpAndSettle();
 
       // A confirmation dialog gates the destructive-looking action.
@@ -130,6 +131,6 @@ void main() {
     expect(find.text('Remove Ads'), findsNothing);
     expect(find.text('Ads removed'), findsNothing);
     expect(find.text('Restore Purchases'), findsNothing);
-    expect(find.text('Reset IAP (Debug)'), findsNothing);
+    expect(find.text('Reset Remove Ads (Debug)'), findsNothing);
   });
 }

@@ -29,4 +29,13 @@ class AdConfig {
       return null;
     }
   }
+
+  static Future<String?> get rewardedAdUnitId async {
+    try {
+      final String? id = await _channel.invokeMethod('getAdRewardedUnitId');
+      return id;
+    } catch (e) {
+      return null;
+    }
+  }
 }

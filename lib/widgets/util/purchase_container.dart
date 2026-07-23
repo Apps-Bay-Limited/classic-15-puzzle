@@ -37,13 +37,9 @@ class PurchaseContainerState extends State<PurchaseContainer> {
 
   bool get isAdsRemoved => _service.isAdsRemoved;
 
-  bool get isThemePackOwned => _service.isThemePackOwned;
-
   ProductDetails? get removeAdsProduct => _service.removeAdsProduct;
 
-  ProductDetails? get themePackProduct => _service.themePackProduct;
-
-  Stream<PurchaseFeedbackEvent> get feedback => _service.feedback;
+  Stream<PurchaseFeedback> get feedback => _service.feedback;
 
   @override
   void initState() {
@@ -59,8 +55,6 @@ class PurchaseContainerState extends State<PurchaseContainer> {
   Future<void> loadProducts() => _service.loadProducts();
 
   Future<void> buyRemoveAds() => _service.buyRemoveAds();
-
-  Future<void> buyThemePack() => _service.buyThemePack();
 
   Future<void> restorePurchases() => _service.restorePurchases();
 

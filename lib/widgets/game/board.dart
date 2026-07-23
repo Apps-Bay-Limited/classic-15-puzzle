@@ -63,7 +63,8 @@ class BoardWidgetState extends State<BoardWidget>
     return friction * 61774.04968;
   }
 
-  static double _flingDuration({double friction = _kFriction, required double velocity}) {
+  static double _flingDuration(
+      {double friction = _kFriction, required double velocity}) {
     // See mPhysicalCoeff
     final double scaledFriction = friction * _decelerationForFriction(0.84);
 
@@ -73,7 +74,8 @@ class BoardWidgetState extends State<BoardWidget>
     return exp(deceleration / (_kDecelerationRate - 1.0));
   }
 
-  static double _flingOffset({double friction = _kFriction, required double velocity}) {
+  static double _flingOffset(
+      {double friction = _kFriction, required double velocity}) {
     var duration = _flingDuration(friction: friction, velocity: velocity);
     return velocity * duration / _initialVelocityPenetration;
   }
@@ -98,8 +100,7 @@ class BoardWidgetState extends State<BoardWidget>
 
   int _applyAnimationMultiplier(int duration) {
     if (_isSpeedRunModeEnabled) {
-      return (duration.toDouble() * _animDurationMultiplierSpeedRun)
-          .toInt();
+      return (duration.toDouble() * _animDurationMultiplierSpeedRun).toInt();
     } else {
       return (duration.toDouble() * _animDurationMultiplierNormal).toInt();
     }
@@ -139,13 +140,17 @@ class BoardWidgetState extends State<BoardWidget>
     _themeChangeController?.dispose();
 
     final controller = AnimationController(
-      duration: Duration(milliseconds: _animDurationMs(_animDurationThemeChange)),
+      duration:
+          Duration(milliseconds: _animDurationMs(_animDurationThemeChange)),
       vsync: this,
     );
     _themeChangeController = controller;
 
-    final animation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
-    final fromBackground = {for (final chip in chips) chip: chip.backgroundColor};
+    final animation =
+        CurvedAnimation(parent: controller, curve: Curves.easeInOut);
+    final fromBackground = {
+      for (final chip in chips) chip: chip.backgroundColor
+    };
     final fromFont = {for (final chip in chips) chip: chip.fontColor};
 
     animation.addListener(() {
@@ -187,7 +192,8 @@ class BoardWidgetState extends State<BoardWidget>
   void _performSetPrevBoard() =>
       _performSetBoard(newBoard: widget.board, oldBoard: widget.board);
 
-  void _performSetBoard({required final Board newBoard, final Board? oldBoard}) {
+  void _performSetBoard(
+      {required final Board newBoard, final Board? oldBoard}) {
     final board = newBoard;
     if (oldBoard == null || board.chips.length != oldBoard.chips.length) {
       // The size of the board has been changed or it's the initial load.
@@ -241,8 +247,7 @@ class BoardWidgetState extends State<BoardWidget>
 
   void _startMoveAnimation(Chip chip, Point<int> point) {
     final controller = AnimationController(
-      duration: Duration(
-          milliseconds: _animDurationMs(_animDurationMove)),
+      duration: Duration(milliseconds: _animDurationMs(_animDurationMove)),
       vsync: this,
     );
 
@@ -278,8 +283,8 @@ class BoardWidgetState extends State<BoardWidget>
   }
 
   void _startBlinkAnimation(Chip chip, Point<int> point) {
-    final duration = Duration(
-        milliseconds: _animDurationMs(_animDurationBlinkHalf) * 2);
+    final duration =
+        Duration(milliseconds: _animDurationMs(_animDurationBlinkHalf) * 2);
     const curve = Curves.easeInOut;
 
     void startScaleAnimation(Chip chip, Point<int> point) {
@@ -350,9 +355,8 @@ class BoardWidgetState extends State<BoardWidget>
 
   void _startColorOverlayAnimation(Chip chip) {
     final controller = AnimationController(
-      duration: Duration(
-          milliseconds:
-              _animDurationMs(_animDurationColorOverlay)),
+      duration:
+          Duration(milliseconds: _animDurationMs(_animDurationColorOverlay)),
       vsync: this,
     );
 
@@ -413,14 +417,13 @@ class BoardWidgetState extends State<BoardWidget>
       width: widget.size,
       height: widget.size,
       child: GestureDetector(
-              onPanStart: (DragStartDetails details) =>
-                  onPanStart(context, details),
-              onPanCancel: onPanCancel,
-              onPanUpdate: onPanUpdate,
-              onPanEnd: onPanEnd,
-              onTapDown: onTapDown,
-              child: boardStack,
-            ),
+        onPanStart: (DragStartDetails details) => onPanStart(context, details),
+        onPanCancel: onPanCancel,
+        onPanUpdate: onPanUpdate,
+        onPanEnd: onPanEnd,
+        onTapDown: onTapDown,
+        child: boardStack,
+      ),
     );
   }
 
@@ -428,16 +431,13 @@ class BoardWidgetState extends State<BoardWidget>
     final board = widget.board;
     final extra = chips[chip.number];
 
-    // Calculate the distance between current absolute position
-    // and target position.
-    final dstHorizontal = extra.x * board.size - chip.targetPoint.x;
-    final dstVertical = extra.y * board.size - chip.targetPoint.y;
-    final dst = sqrt(pow(dstHorizontal, 2) + pow(dstVertical, 2));
-
-    // Calculate the colors.
+    // Tiles always render at their full theme color, regardless of how far
+    // they currently sit from their solved position. (An earlier design faded
+    // a tile toward the board color as its distance-from-home grew, but after
+    // a shuffle that left almost every tile washed out to the board color and
+    // made the numbers hard to read against some palettes.)
     final overlayColor = extra.overlayColor;
-    final backgroundColor =
-        extra.backgroundColor.withValues(alpha: dst < 1 ? 1 - dst : 0);
+    final backgroundColor = extra.backgroundColor;
     final fontColor = extra.fontColor;
 
     final photoImage = widget.photoImage;

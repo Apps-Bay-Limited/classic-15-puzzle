@@ -58,6 +58,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String gridSizeSelectedSemanticsLabel(String size) {
+    return '${size}x$size grid, selected';
+  }
+
+  @override
   String get noGamesYet => 'No games yet';
 
   @override
@@ -94,9 +99,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get productNameRemoveAds => 'Remove Ads';
 
   @override
-  String get productNameThemePack => 'Theme Pack';
-
-  @override
   String get productNameGeneric => 'That purchase';
 
   @override
@@ -118,12 +120,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purchaseFailedMessage => 'Purchase failed. Please try again.';
 
   @override
-  String get themePackPurchaseSuccessMessage =>
-      'Theme Pack unlocked! Enjoy the new themes and photo mode.';
-
-  @override
   String get removeAdsPurchaseSuccessMessage =>
       'Ads removed. Thank you for your support!';
+
+  @override
+  String get rewardedAdUnavailableMessage =>
+      'Ad not available right now. Please try again shortly.';
+
+  @override
+  String get rewardedAdDismissedMessage =>
+      'Watch the full ad to unlock themes and photo mode.';
+
+  @override
+  String get themesUnlockedMessage => 'Themes and photo mode unlocked. Enjoy!';
 
   @override
   String alreadyOwnedMessage(String productName) {
@@ -157,6 +166,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hintTooltip => 'Hint';
 
   @override
+  String get pauseTooltip => 'Pause';
+
+  @override
+  String get resumeTooltip => 'Resume';
+
+  @override
+  String get pausedTapToResumeLabel => 'Paused — tap to resume';
+
+  @override
   String get newGameTooltip => 'New game';
 
   @override
@@ -173,6 +191,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedRunModeSubtitle => 'Faster animations, tap-only tiles';
+
+  @override
+  String get speedRunModeInfoTooltip => 'About Speed run mode';
+
+  @override
+  String get speedRunModeExplanation =>
+      'In Speed Run Mode, tap any tile to slide it toward the empty space — you don\'t need to tap only tiles directly next to it. Animations are faster too, so you can solve puzzles as quickly as possible.';
 
   @override
   String get soundEffectsLabel => 'Sound effects';

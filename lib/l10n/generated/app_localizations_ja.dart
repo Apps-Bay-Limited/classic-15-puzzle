@@ -57,6 +57,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String gridSizeSelectedSemanticsLabel(String size) {
+    return '${size}x$size グリッド、選択中';
+  }
+
+  @override
   String get noGamesYet => 'まだ記録がありません';
 
   @override
@@ -92,9 +97,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get productNameRemoveAds => '広告を削除';
 
   @override
-  String get productNameThemePack => 'テーマパック';
-
-  @override
   String get productNameGeneric => 'その購入';
 
   @override
@@ -116,11 +118,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get purchaseFailedMessage => '購入に失敗しました。もう一度お試しください。';
 
   @override
-  String get themePackPurchaseSuccessMessage =>
-      'テーマパックのロックが解除されました！新しいテーマと写真モードをお楽しみください。';
+  String get removeAdsPurchaseSuccessMessage => '広告が削除されました。ご支援ありがとうございます！';
 
   @override
-  String get removeAdsPurchaseSuccessMessage => '広告が削除されました。ご支援ありがとうございます！';
+  String get rewardedAdUnavailableMessage =>
+      '広告は現在利用できません。しばらくしてからもう一度お試しください。';
+
+  @override
+  String get rewardedAdDismissedMessage => 'テーマと写真モードを解除するには、広告を最後まで視聴してください。';
+
+  @override
+  String get themesUnlockedMessage => 'テーマと写真モードのロックが解除されました。お楽しみください！';
 
   @override
   String alreadyOwnedMessage(String productName) {
@@ -154,6 +162,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get hintTooltip => 'ヒント';
 
   @override
+  String get pauseTooltip => '一時停止';
+
+  @override
+  String get resumeTooltip => '再開';
+
+  @override
+  String get pausedTapToResumeLabel => '一時停止中 — タップして再開';
+
+  @override
   String get newGameTooltip => '新しいゲーム';
 
   @override
@@ -170,6 +187,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get speedRunModeSubtitle => 'アニメーションが速くなり、タップのみで操作します';
+
+  @override
+  String get speedRunModeInfoTooltip => 'スピードランモードについて';
+
+  @override
+  String get speedRunModeExplanation =>
+      'スピードランモードでは、どのタイルをタップしても空きマスの方向へスライドします。空きマスに隣接するタイルだけをタップする必要はありません。アニメーションも高速化されるので、できるだけ早くパズルを解くことができます。';
 
   @override
   String get soundEffectsLabel => '効果音';

@@ -10,7 +10,7 @@ import 'package:classic_15_puzzle/widgets/game/page.dart';
 import 'package:classic_15_puzzle/widgets/util/ads_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/in_app_reviewer_helper.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
-import 'package:classic_15_puzzle/widgets/util/purchase_service.dart';
+import 'package:classic_15_puzzle/widgets/util/theme_unlock_container.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,30 +21,29 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Fast local read so a purchased user's cold start never spins up the ads
-  // SDK in the first place. The real entitlement is reconciled with the
-  // store shortly after, once PurchaseContainer mounts.
-  final adsRemoved = await readCachedAdsRemoved();
+  // The ads SDK is always initialized, even for Remove Ads purchasers —
+  // rewarded ads (used to unlock themes/photo mode) are opt-in and offered
+  // regardless of that purchase; only the banner/interstitial/app-open ad
+  // surfaces are skipped for them, gated separately at their call sites.
+  await AdsManager.initialize();
+  MobileAds.instance.initialize();
 
-  if (!adsRemoved) {
-    await AdsManager.initialize();
-    MobileAds.instance.initialize();
+  Future.delayed(const Duration(seconds: 1), () {
+    AppTrackingTransparency.requestTrackingAuthorization();
+  });
 
-    Future.delayed(const Duration(seconds: 1), () {
-      AppTrackingTransparency.requestTrackingAuthorization();
-    });
-
-    AdsManager.debugPrintID();
-  }
+  AdsManager.debugPrintID();
 
   InAppReviewHelper.checkAndAskForReview();
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_) {
     runApp(
       const PurchaseContainer(
-        child: PlayGamesContainer(
-          child: ConfigUiContainer(
-            child: MyApp(),
+        child: ThemeUnlockContainer(
+          child: PlayGamesContainer(
+            child: ConfigUiContainer(
+              child: MyApp(),
+            ),
           ),
         ),
       ),
@@ -119,18 +118,11 @@ class _MyMaterialApp extends _MyPlatformApp {
           child: child!,
         );
       },
-      home: Builder(
-        builder: (context) {
-          final brightness = Theme.of(context).brightness;
-          final overlay = brightness == Brightness.dark
-              ? SystemUiOverlayStyle.light
-              : SystemUiOverlayStyle.dark;
-          SystemChrome.setSystemUIOverlayStyle(
-            overlay.copyWith(statusBarColor: Colors.transparent),
-          );
-          return const GamePage();
-        },
-      ),
+      // Status bar styling is set declaratively on GameMaterialPage's AppBar
+      // (via systemOverlayStyle) instead of imperatively here — an
+      // AppBar's own overlay-style region always wins over an ancestor's,
+      // so setting it here as well was fragile and got silently overridden.
+      home: const GamePage(),
     );
   }
 }

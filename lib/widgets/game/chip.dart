@@ -123,13 +123,22 @@ class _ChipWidgetState extends State<ChipWidget> with SingleTickerProviderStateM
       color: color,
       clipBehavior: Clip.antiAlias,
       elevation: isIOS ? 0 : 2,
-      child: InkWell(
-        onTap: widget.onPressed,
-        onTapDown: (_) => _onTapDown(),
-        onTapUp: (_) => _onTapEnd(),
-        onTapCancel: _onTapEnd,
-        borderRadius: BorderRadius.circular(radius),
-        child: tileContent,
+      // When onPressed is null (speed run mode), this InkWell would still
+      // register a tap recognizer just for onTapDown/onTapUp's press
+      // animation, competing in the gesture arena with the board-level
+      // GestureDetector that actually performs the tap-to-move — the
+      // ambiguity between them was what made moves feel like they needed
+      // a long press. Removing it from hit-testing entirely resolves that.
+      child: IgnorePointer(
+        ignoring: widget.onPressed == null,
+        child: InkWell(
+          onTap: widget.onPressed,
+          onTapDown: (_) => _onTapDown(),
+          onTapUp: (_) => _onTapEnd(),
+          onTapCancel: _onTapEnd,
+          borderRadius: BorderRadius.circular(radius),
+          child: tileContent,
+        ),
       ),
     );
 

@@ -183,6 +183,12 @@ abstract class AppLocalizations {
   /// **'{size}x{size} grid'**
   String gridSizeSemanticsLabel(String size);
 
+  /// Accessibility label for the currently selected grid-size tile.
+  ///
+  /// In en, this message translates to:
+  /// **'{size}x{size} grid, selected'**
+  String gridSizeSelectedSemanticsLabel(String size);
+
   /// No description provided for @noGamesYet.
   ///
   /// In en, this message translates to:
@@ -244,12 +250,6 @@ abstract class AppLocalizations {
   /// **'Remove Ads'**
   String get productNameRemoveAds;
 
-  /// No description provided for @productNameThemePack.
-  ///
-  /// In en, this message translates to:
-  /// **'Theme Pack'**
-  String get productNameThemePack;
-
   /// No description provided for @productNameGeneric.
   ///
   /// In en, this message translates to:
@@ -286,17 +286,29 @@ abstract class AppLocalizations {
   /// **'Purchase failed. Please try again.'**
   String get purchaseFailedMessage;
 
-  /// No description provided for @themePackPurchaseSuccessMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Theme Pack unlocked! Enjoy the new themes and photo mode.'**
-  String get themePackPurchaseSuccessMessage;
-
   /// No description provided for @removeAdsPurchaseSuccessMessage.
   ///
   /// In en, this message translates to:
   /// **'Ads removed. Thank you for your support!'**
   String get removeAdsPurchaseSuccessMessage;
+
+  /// No description provided for @rewardedAdUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad not available right now. Please try again shortly.'**
+  String get rewardedAdUnavailableMessage;
+
+  /// No description provided for @rewardedAdDismissedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch the full ad to unlock themes and photo mode.'**
+  String get rewardedAdDismissedMessage;
+
+  /// No description provided for @themesUnlockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Themes and photo mode unlocked. Enjoy!'**
+  String get themesUnlockedMessage;
 
   /// No description provided for @alreadyOwnedMessage.
   ///
@@ -352,6 +364,24 @@ abstract class AppLocalizations {
   /// **'Hint'**
   String get hintTooltip;
 
+  /// No description provided for @pauseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pauseTooltip;
+
+  /// No description provided for @resumeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get resumeTooltip;
+
+  /// No description provided for @pausedTapToResumeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused — tap to resume'**
+  String get pausedTapToResumeLabel;
+
   /// No description provided for @newGameTooltip.
   ///
   /// In en, this message translates to:
@@ -387,6 +417,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Faster animations, tap-only tiles'**
   String get speedRunModeSubtitle;
+
+  /// No description provided for @speedRunModeInfoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'About Speed run mode'**
+  String get speedRunModeInfoTooltip;
+
+  /// No description provided for @speedRunModeExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'In Speed Run Mode, tap any tile to slide it toward the empty space — you don\'t need to tap only tiles directly next to it. Animations are faster too, so you can solve puzzles as quickly as possible.'**
+  String get speedRunModeExplanation;
 
   /// No description provided for @soundEffectsLabel.
   ///

@@ -52,6 +52,14 @@
     }
   },
 
+  "gridSizeSelectedSemanticsLabel": "{size}x{size} grid, selected",
+  "@gridSizeSelectedSemanticsLabel": {
+    "description": "Accessibility label for the currently selected grid-size tile.",
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+
   "noGamesYet": "No games yet",
   "solveToSeeRecords": "Solve a puzzle to see your records here",
   "bestTimeLabel": "BEST TIME",
@@ -81,7 +89,6 @@
   "photoLoadFailedMessage": "That saved photo couldn't be loaded. Switched back to Classic.",
 
   "productNameRemoveAds": "Remove Ads",
-  "productNameThemePack": "Theme Pack",
   "productNameGeneric": "That purchase",
 
   "storeUnavailableMessage": "The App Store is unavailable right now. Please try again later.",
@@ -96,8 +103,11 @@
   "purchasePendingMessage": "Your purchase is pending approval.",
   "purchaseCancelledMessage": "Purchase cancelled.",
   "purchaseFailedMessage": "Purchase failed. Please try again.",
-  "themePackPurchaseSuccessMessage": "Theme Pack unlocked! Enjoy the new themes and photo mode.",
   "removeAdsPurchaseSuccessMessage": "Ads removed. Thank you for your support!",
+
+  "rewardedAdUnavailableMessage": "Ad not available right now. Please try again shortly.",
+  "rewardedAdDismissedMessage": "Watch the full ad to unlock themes and photo mode.",
+  "themesUnlockedMessage": "Themes and photo mode unlocked. Enjoy!",
 
   "alreadyOwnedMessage": "You already own {productName}.",
   "@alreadyOwnedMessage": {
@@ -123,6 +133,9 @@
   "timeLabel": "TIME",
   "movesLabel": "MOVES",
   "hintTooltip": "Hint",
+  "pauseTooltip": "Pause",
+  "resumeTooltip": "Resume",
+  "pausedTapToResumeLabel": "Paused — tap to resume",
   "newGameTooltip": "New game",
 
   "settingsSubtitle": "Customize your puzzle experience",
@@ -130,6 +143,8 @@
   "darkModeLabel": "Dark mode",
   "speedRunModeLabel": "Speed run mode",
   "speedRunModeSubtitle": "Faster animations, tap-only tiles",
+  "speedRunModeInfoTooltip": "About Speed run mode",
+  "speedRunModeExplanation": "In Speed Run Mode, tap any tile to slide it toward the empty space — you don't need to tap only tiles directly next to it. Animations are faster too, so you can solve puzzles as quickly as possible.",
   "soundEffectsLabel": "Sound effects",
 
   "adsRemovedTitle": "Ads removed",

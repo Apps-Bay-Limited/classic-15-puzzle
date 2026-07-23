@@ -1,8 +1,12 @@
-import 'package:classic_15_puzzle/l10n/generated/app_localizations.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 
-/// Reserved banner ad slot with graceful collapse on load failure.
+/// Banner ad slot that only takes up space once a real ad has loaded.
+///
+/// While the ad is still loading (or has failed / no-filled) the slot
+/// collapses to nothing rather than reserving an empty bar with a bare
+/// "advertisement" placeholder — that empty strip read as a broken ad. When
+/// the ad does load it animates in from zero height.
 class AdBannerSlot extends StatelessWidget {
   final bool isLoaded;
   final bool hasFailed;
@@ -17,27 +21,21 @@ class AdBannerSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (hasFailed) {
-      return const SizedBox.shrink();
-    }
+    final showAd = isLoaded && !hasFailed && adWidget != null;
 
-    return AnimatedContainer(
+    return AnimatedSize(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
-      height: AppSpacing.adBannerHeight,
-      width: double.infinity,
-      alignment: Alignment.center,
-      child: isLoaded && adWidget != null
-          ? adWidget
-          : Text(
-              AppLocalizations.of(context)!.advertisementLabel,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .outline
-                        .withValues(alpha: 0.5),
-                  ),
-            ),
+      child: showAd
+          ? Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: SizedBox(
+                height: AppSpacing.adBannerHeight,
+                width: double.infinity,
+                child: Center(child: adWidget),
+              ),
+            )
+          : const SizedBox(width: double.infinity, height: 0),
     );
   }
 }

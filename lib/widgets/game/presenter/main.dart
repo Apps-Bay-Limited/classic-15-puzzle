@@ -69,6 +69,8 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
 
   bool _isSolving = false;
 
+  bool _isManuallyPaused = false;
+
   int _tipTapCount = 0;
 
   final InterstitialAdManager _interstitialAdManager = InterstitialAdManager();
@@ -183,6 +185,7 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       steps = 0;
       _pausedMs = 0;
       _pauseStartedAt = null;
+      _isManuallyPaused = false;
       _gameActive = true;
       board =
           game.shuffle(game.hardest(board), amount: board.size * board.size);
@@ -196,12 +199,44 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       _gameActive = false;
       _pausedMs = 0;
       _pauseStartedAt = null;
+      _isManuallyPaused = false;
     });
   }
 
   bool isPlaying() => time != timeStopped;
 
   bool get isGameActive => _gameActive;
+
+  bool get isManuallyPaused => _isManuallyPaused;
+
+  /// Pauses (blurring the board and freezing the timer) or resumes.
+  /// A no-op if there's no active game to pause.
+  void togglePause() {
+    if (_isManuallyPaused) {
+      _resumeFromManualPause();
+    } else {
+      _pauseManually();
+    }
+  }
+
+  void _pauseManually() {
+    if (!isPlaying() || _isManuallyPaused) return;
+    setState(() {
+      _isManuallyPaused = true;
+      _pauseStartedAt ??= DateTime.now().millisecondsSinceEpoch;
+    });
+  }
+
+  void _resumeFromManualPause() {
+    if (!_isManuallyPaused) return;
+    setState(() {
+      _isManuallyPaused = false;
+      if (_pauseStartedAt != null) {
+        _pausedMs += DateTime.now().millisecondsSinceEpoch - _pauseStartedAt!;
+        _pauseStartedAt = null;
+      }
+    });
+  }
 
   int get elapsedMs {
     if (time == timeStopped) return 0;
@@ -222,12 +257,15 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
       steps = 0;
       _pausedMs = 0;
       _pauseStartedAt = null;
+      _isManuallyPaused = false;
       _gameActive = false;
       board = _createBoard(size);
     });
   }
 
   void tap({required Point<int> point}) {
+    if (_isManuallyPaused) return;
+
     final prevBoard = board;
     final nextBoard = game.tap(board, point: point);
 
@@ -265,7 +303,9 @@ class GamePresenterWidgetState extends State<GamePresenterWidget>
   }
 
   Future<void> hint() async {
-    if (!_gameActive || board.isSolved() || _isSolving) return;
+    if (!_gameActive || board.isSolved() || _isSolving || _isManuallyPaused) {
+      return;
+    }
 
     setState(() {
       _isSolving = true;

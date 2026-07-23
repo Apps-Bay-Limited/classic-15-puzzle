@@ -56,6 +56,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String gridSizeSelectedSemanticsLabel(String size) {
+    return '${size}x$size 网格，已选中';
+  }
+
+  @override
   String get noGamesYet => '暂无记录';
 
   @override
@@ -91,9 +96,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get productNameRemoveAds => '移除广告';
 
   @override
-  String get productNameThemePack => '主题包';
-
-  @override
   String get productNameGeneric => '该购买项目';
 
   @override
@@ -114,10 +116,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get purchaseFailedMessage => '购买失败，请重试。';
 
   @override
-  String get themePackPurchaseSuccessMessage => '主题包已解锁！尽情体验新主题和照片拼图模式吧。';
+  String get removeAdsPurchaseSuccessMessage => '广告已移除，感谢您的支持！';
 
   @override
-  String get removeAdsPurchaseSuccessMessage => '广告已移除，感谢您的支持！';
+  String get rewardedAdUnavailableMessage => '广告暂时不可用，请稍后再试。';
+
+  @override
+  String get rewardedAdDismissedMessage => '看完整个广告才能解锁主题和照片模式。';
+
+  @override
+  String get themesUnlockedMessage => '主题和照片模式已解锁，尽情体验吧！';
 
   @override
   String alreadyOwnedMessage(String productName) {
@@ -151,6 +159,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hintTooltip => '提示';
 
   @override
+  String get pauseTooltip => '暂停';
+
+  @override
+  String get resumeTooltip => '继续';
+
+  @override
+  String get pausedTapToResumeLabel => '已暂停——点击继续';
+
+  @override
   String get newGameTooltip => '新游戏';
 
   @override
@@ -167,6 +184,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get speedRunModeSubtitle => '动画更快，仅支持点击移动';
+
+  @override
+  String get speedRunModeInfoTooltip => '关于竞速模式';
+
+  @override
+  String get speedRunModeExplanation =>
+      '在竞速模式下，点击任意方块即可将其滑向空白格——不需要只点击紧邻空白格的方块。动画也会更快，让你尽可能快速地完成拼图。';
 
   @override
   String get soundEffectsLabel => '音效';
@@ -328,6 +352,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
+  String gridSizeSelectedSemanticsLabel(String size) {
+    return '${size}x$size 網格，已選取';
+  }
+
+  @override
   String get noGamesYet => '尚無記錄';
 
   @override
@@ -363,9 +392,6 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get productNameRemoveAds => '移除廣告';
 
   @override
-  String get productNameThemePack => '主題包';
-
-  @override
   String get productNameGeneric => '該購買項目';
 
   @override
@@ -386,10 +412,16 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get purchaseFailedMessage => '購買失敗，請重試。';
 
   @override
-  String get themePackPurchaseSuccessMessage => '主題包已解鎖！盡情體驗新主題和照片拼圖模式吧。';
+  String get removeAdsPurchaseSuccessMessage => '廣告已移除，感謝您的支持！';
 
   @override
-  String get removeAdsPurchaseSuccessMessage => '廣告已移除，感謝您的支持！';
+  String get rewardedAdUnavailableMessage => '廣告暫時無法使用，請稍後再試。';
+
+  @override
+  String get rewardedAdDismissedMessage => '看完整支廣告才能解鎖主題和照片模式。';
+
+  @override
+  String get themesUnlockedMessage => '主題和照片模式已解鎖，盡情體驗吧！';
 
   @override
   String alreadyOwnedMessage(String productName) {
@@ -423,6 +455,15 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get hintTooltip => '提示';
 
   @override
+  String get pauseTooltip => '暫停';
+
+  @override
+  String get resumeTooltip => '繼續';
+
+  @override
+  String get pausedTapToResumeLabel => '已暫停——點擊繼續';
+
+  @override
   String get newGameTooltip => '新遊戲';
 
   @override
@@ -439,6 +480,13 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get speedRunModeSubtitle => '動畫更快，僅支援點擊移動';
+
+  @override
+  String get speedRunModeInfoTooltip => '關於競速模式';
+
+  @override
+  String get speedRunModeExplanation =>
+      '在競速模式下，點擊任意方塊即可將其滑向空白格——不需要只點擊緊鄰空白格的方塊。動畫也會更快，讓你盡可能快速地完成拼圖。';
 
   @override
   String get soundEffectsLabel => '音效';

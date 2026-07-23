@@ -9,16 +9,18 @@ class AdsManager {
   static String? _bannerAdUnitId;
   static String? _openAdUnitID;
   static String? _interstitialAdUnitId;
+  static String? _rewardedAdUnitId;
 
   static Future<void> initialize() async {
     try {
       _bannerAdUnitId = await AdConfig.bannerAdUnitId;
       _openAdUnitID = await AdConfig.openAdUnitId;
       _interstitialAdUnitId = await AdConfig.interstitialAdUnitId;
+      _rewardedAdUnitId = await AdConfig.rewardedAdUnitId;
     } catch (e) {
       debugPrint("AdsManager initialization failed: $e");
     }
-    debugPrint("AdsManager initialized: banner=$_bannerAdUnitId, open=$_openAdUnitID, interstitial=$_interstitialAdUnitId");
+    debugPrint("AdsManager initialized: banner=$_bannerAdUnitId, open=$_openAdUnitID, interstitial=$_interstitialAdUnitId, rewarded=$_rewardedAdUnitId");
   }
 
   static String get bannerAdUnitId {
@@ -44,10 +46,24 @@ class AdsManager {
     return "";
   }
 
+  static String get rewardedAdUnitId {
+    if (disableAllAdsForScreenshot) return "";
+    if (_rewardedAdUnitId != null && _rewardedAdUnitId!.isNotEmpty) {
+      return _rewardedAdUnitId!;
+    }
+    if (Platform.isAndroid) {
+      return "ca-app-pub-3940256099942544/5224354917";
+    } else if (Platform.isIOS) {
+      return "ca-app-pub-3940256099942544/1712485313";
+    }
+    return "";
+  }
+
   static void debugPrintID() {
     debugPrint("bannerAdUnitId: ${AdsManager.bannerAdUnitId}");
     debugPrint("openAdUnitID: ${AdsManager.openAdUnitID}");
     debugPrint("interstitialAdUnitId: ${AdsManager.interstitialAdUnitId}");
+    debugPrint("rewardedAdUnitId: ${AdsManager.rewardedAdUnitId}");
   }
 }
 
@@ -244,5 +260,124 @@ class InterstitialAdManager {
       },
     );
     _interstitialAd!.show();
+  }
+}
+
+/// What [ThemeUnlockContainer] needs from a rewarded-ad source. Pulled out
+/// as an interface (rather than depending on [RewardedAdManager] directly)
+/// so tests can inject a fake that never touches the real Google Mobile Ads
+/// platform channel.
+abstract class RewardedAdSource {
+  bool get isAdAvailable;
+
+  void loadAd();
+
+  void dispose();
+
+  void showAdIfAvailable({
+    required VoidCallback onUserEarnedReward,
+    VoidCallback? onAdClosed,
+  });
+}
+
+/// Loads and shows the rewarded ad used to unlock tile themes + photo mode.
+/// Unlike [InterstitialAdManager], showing it can additionally report an
+/// earned reward — the caller is responsible for granting the entitlement
+/// only when [onUserEarnedReward] actually fires (the user may close the ad
+/// before it finishes, in which case no reward is granted).
+class RewardedAdManager implements RewardedAdSource {
+  RewardedAd? _rewardedAd;
+  bool _isShowingAd = false;
+  bool _isLoading = false;
+
+  @override
+  void loadAd() {
+    if (_isLoading || _rewardedAd != null) return;
+    _isLoading = true;
+
+    final adUnitId = AdsManager.rewardedAdUnitId;
+    if (adUnitId.isEmpty) {
+      _isLoading = false;
+      return;
+    }
+
+    RewardedAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          debugPrint('RewardedAd loaded');
+          _rewardedAd = ad;
+          _isLoading = false;
+        },
+        onAdFailedToLoad: (error) {
+          debugPrint('RewardedAd failed to load: $error');
+          _rewardedAd = null;
+          _isLoading = false;
+        },
+      ),
+    );
+  }
+
+  @override
+  bool get isAdAvailable => _rewardedAd != null;
+
+  /// Disposes an already-loaded ad, e.g. on dispose of the owning widget.
+  @override
+  void dispose() {
+    _rewardedAd?.dispose();
+    _rewardedAd = null;
+  }
+
+  /// Shows the rewarded ad if one is loaded. [onUserEarnedReward] fires only
+  /// if the user watches to completion; [onAdClosed] always fires afterward
+  /// regardless of outcome (or immediately if no ad was available), so
+  /// callers can reset any "showing ad" UI state either way.
+  @override
+  void showAdIfAvailable({
+    required VoidCallback onUserEarnedReward,
+    VoidCallback? onAdClosed,
+  }) {
+    if (!isAdAvailable) {
+      debugPrint('Tried to show rewarded ad before available.');
+      loadAd();
+      onAdClosed?.call();
+      return;
+    }
+    if (_isShowingAd) {
+      debugPrint('Tried to show rewarded ad while already showing an ad.');
+      onAdClosed?.call();
+      return;
+    }
+
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        _isShowingAd = true;
+        debugPrint('$ad onAdShowedFullScreenContent');
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        debugPrint('$ad onAdFailedToShowFullScreenContent: $error');
+        _isShowingAd = false;
+        ad.dispose();
+        _rewardedAd = null;
+        loadAd();
+        onAdClosed?.call();
+      },
+      onAdDismissedFullScreenContent: (ad) {
+        debugPrint('$ad onAdDismissedFullScreenContent');
+        _isShowingAd = false;
+        ad.dispose();
+        _rewardedAd = null;
+        loadAd();
+        onAdClosed?.call();
+      },
+    );
+
+    _rewardedAd!.show(
+      onUserEarnedReward: (ad, reward) {
+        debugPrint('User earned reward: ${reward.amount} ${reward.type}');
+        onUserEarnedReward();
+      },
+    );
   }
 }

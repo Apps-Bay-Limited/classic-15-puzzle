@@ -21,22 +21,7 @@ enum PurchaseFeedback {
   restoreFailed,
 }
 
-/// Which non-consumable product a [PurchaseFeedback] event is about, so the
-/// UI can pick accurate wording (e.g. "Remove Ads" vs "Theme Pack"). `null`
-/// for store-level events not tied to one product (e.g. [PurchaseFeedback.
-/// storeUnavailable] or [PurchaseFeedback.restoreEmpty], which cover a
-/// whole restore/availability check rather than a single purchase).
-enum PurchaseProduct { removeAds, themePack }
-
-class PurchaseFeedbackEvent {
-  final PurchaseFeedback type;
-  final PurchaseProduct? product;
-
-  const PurchaseFeedbackEvent(this.type, {this.product});
-}
-
 const String _prefsKeyAdsRemoved = 'purchase::ads_removed';
-const String _prefsKeyThemePackOwned = 'purchase::theme_pack_owned';
 
 /// Reads the locally cached entitlement without needing the widget tree,
 /// so `main()` can decide whether to initialize the ads SDK at all before
@@ -50,15 +35,16 @@ Future<bool> readCachedAdsRemoved() async {
   }
 }
 
-/// Manages the "Remove Ads" and "Theme Pack" non-consumable purchases.
+/// Manages the "Remove Ads" non-consumable purchase.
 ///
 /// Only [_StoreKitPurchaseService] talks to the App Store; on every other
 /// platform [PurchaseService] resolves to [_UnsupportedPurchaseService], a
 /// no-op stub, so Android keeps compiling and running with ads unchanged.
 /// Android billing can later be added as a third implementation behind this
-/// same interface. Note that on unsupported platforms [isThemePackOwned] is
-/// unconditionally `true` — there's no way to charge Android users, so
-/// themes/photo mode are simply free there rather than an unpayable paywall.
+/// same interface.
+///
+/// Tile themes/photo mode are a separate, ad-based unlock — see
+/// [ThemeUnlockContainer] — not part of this purchase flow.
 abstract class PurchaseService extends ChangeNotifier {
   factory PurchaseService() {
     if (Platform.isIOS) return _StoreKitPurchaseService();
@@ -79,13 +65,9 @@ abstract class PurchaseService extends ChangeNotifier {
 
   bool get isAdsRemoved;
 
-  bool get isThemePackOwned;
-
   ProductDetails? get removeAdsProduct;
 
-  ProductDetails? get themePackProduct;
-
-  Stream<PurchaseFeedbackEvent> get feedback;
+  Stream<PurchaseFeedback> get feedback;
 
   Future<void> init();
 
@@ -93,37 +75,14 @@ abstract class PurchaseService extends ChangeNotifier {
 
   Future<void> buyRemoveAds();
 
-  Future<void> buyThemePack();
-
   Future<void> restorePurchases();
 
-  /// Debug-only: clears the locally persisted entitlements and cached
-  /// product/purchase state, re-enabling ads/locking themes immediately.
-  /// Cannot revoke the real App Store entitlement — a later
-  /// [restorePurchases] call will legitimately restore it. Callers must gate
-  /// the UI for this behind `kDebugMode`; the method itself also no-ops in
-  /// release as a safeguard.
+  /// Debug-only: clears the locally persisted entitlement and cached
+  /// product/purchase state, re-enabling ads immediately. Cannot revoke the
+  /// real App Store entitlement — a later [restorePurchases] call will
+  /// legitimately restore it. Callers must gate the UI for this behind
+  /// `kDebugMode`; the method itself also no-ops in release as a safeguard.
   Future<void> resetForDebug();
-}
-
-/// Tracks purchase state for a single non-consumable product.
-class _ProductEntitlement {
-  _ProductEntitlement({
-    required this.productId,
-    required this.prefsKey,
-    required this.product,
-  });
-
-  final String productId;
-  final String prefsKey;
-
-  /// Which [PurchaseProduct] this entitlement corresponds to, so feedback
-  /// events can be attributed to the right product for the UI.
-  final PurchaseProduct product;
-
-  bool isOwned = false;
-  ProductDetails? productDetails;
-  bool isManualBuyInFlight = false;
 }
 
 class _StoreKitPurchaseService extends PurchaseService {
@@ -135,30 +94,17 @@ class _StoreKitPurchaseService extends PurchaseService {
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   SharedPreferences? _prefs;
 
-  final _adsEntitlement = _ProductEntitlement(
-    productId: PurchaseConfig.removeAdsProductId,
-    prefsKey: _prefsKeyAdsRemoved,
-    product: PurchaseProduct.removeAds,
-  );
-  final _themePackEntitlement = _ProductEntitlement(
-    productId: PurchaseConfig.themePackProductId,
-    prefsKey: _prefsKeyThemePackOwned,
-    product: PurchaseProduct.themePack,
-  );
-  late final Map<String, _ProductEntitlement> _entitlementsByProductId = {
-    _adsEntitlement.productId: _adsEntitlement,
-    _themePackEntitlement.productId: _themePackEntitlement,
-  };
-
   bool _isAvailable = false;
   bool _isLoadingProduct = false;
   bool _isPurchasePending = false;
+  bool _isAdsRemoved = false;
+  ProductDetails? _product;
 
+  bool _isManualBuyInFlight = false;
   bool _isManualRestoreInFlight = false;
   bool _manualRestoreFoundPurchase = false;
 
-  final _feedbackController =
-      StreamController<PurchaseFeedbackEvent>.broadcast();
+  final _feedbackController = StreamController<PurchaseFeedback>.broadcast();
 
   @override
   bool get isSupported => true;
@@ -173,26 +119,18 @@ class _StoreKitPurchaseService extends PurchaseService {
   bool get isPurchasePending => _isPurchasePending;
 
   @override
-  bool get isAdsRemoved => _adsEntitlement.isOwned;
+  bool get isAdsRemoved => _isAdsRemoved;
 
   @override
-  bool get isThemePackOwned => _themePackEntitlement.isOwned;
+  ProductDetails? get removeAdsProduct => _product;
 
   @override
-  ProductDetails? get removeAdsProduct => _adsEntitlement.productDetails;
-
-  @override
-  ProductDetails? get themePackProduct => _themePackEntitlement.productDetails;
-
-  @override
-  Stream<PurchaseFeedbackEvent> get feedback => _feedbackController.stream;
+  Stream<PurchaseFeedback> get feedback => _feedbackController.stream;
 
   @override
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    for (final entitlement in _entitlementsByProductId.values) {
-      entitlement.isOwned = _prefs?.getBool(entitlement.prefsKey) ?? false;
-    }
+    _isAdsRemoved = _prefs?.getBool(_prefsKeyAdsRemoved) ?? false;
     notifyListeners();
 
     try {
@@ -224,18 +162,14 @@ class _StoreKitPurchaseService extends PurchaseService {
     notifyListeners();
     try {
       final response = await _iap
-          .queryProductDetails(_entitlementsByProductId.keys.toSet());
-      for (final entitlement in _entitlementsByProductId.values) {
-        entitlement.productDetails = null;
-      }
-      for (final details in response.productDetails) {
-        _entitlementsByProductId[details.id]?.productDetails = details;
-      }
+          .queryProductDetails({PurchaseConfig.removeAdsProductId});
+      _product =
+          response.error == null && response.productDetails.isNotEmpty
+              ? response.productDetails.first
+              : null;
     } catch (e) {
       debugPrint('PurchaseService: loadProducts failed: $e');
-      for (final entitlement in _entitlementsByProductId.values) {
-        entitlement.productDetails = null;
-      }
+      _product = null;
     } finally {
       _isLoadingProduct = false;
       notifyListeners();
@@ -243,43 +177,37 @@ class _StoreKitPurchaseService extends PurchaseService {
   }
 
   @override
-  Future<void> buyRemoveAds() => _buy(_adsEntitlement);
-
-  @override
-  Future<void> buyThemePack() => _buy(_themePackEntitlement);
-
-  Future<void> _buy(_ProductEntitlement entitlement) async {
-    if (entitlement.isOwned) {
-      _emit(PurchaseFeedback.alreadyOwned, entitlement.product);
+  Future<void> buyRemoveAds() async {
+    if (_isAdsRemoved) {
+      _emit(PurchaseFeedback.alreadyOwned);
       return;
     }
     if (!_isAvailable) {
-      _emit(PurchaseFeedback.storeUnavailable, entitlement.product);
+      _emit(PurchaseFeedback.storeUnavailable);
       return;
     }
-    final productDetails = entitlement.productDetails;
-    if (productDetails == null) {
-      _emit(PurchaseFeedback.productUnavailable, entitlement.product);
+    final product = _product;
+    if (product == null) {
+      _emit(PurchaseFeedback.productUnavailable);
       return;
     }
 
-    entitlement.isManualBuyInFlight = true;
+    _isManualBuyInFlight = true;
     try {
       await _iap.buyNonConsumable(
-        purchaseParam: PurchaseParam(productDetails: productDetails),
+        purchaseParam: PurchaseParam(productDetails: product),
       );
     } catch (e) {
-      debugPrint(
-          'PurchaseService: buy failed for ${entitlement.productId}: $e');
-      entitlement.isManualBuyInFlight = false;
-      _emit(PurchaseFeedback.purchaseFailed, entitlement.product);
+      debugPrint('PurchaseService: buyRemoveAds failed: $e');
+      _isManualBuyInFlight = false;
+      _emit(PurchaseFeedback.purchaseFailed);
     }
   }
 
   @override
   Future<void> restorePurchases() async {
     if (!_isAvailable) {
-      _emit(PurchaseFeedback.storeUnavailable, null);
+      _emit(PurchaseFeedback.storeUnavailable);
       return;
     }
 
@@ -290,7 +218,7 @@ class _StoreKitPurchaseService extends PurchaseService {
     } catch (e) {
       debugPrint('PurchaseService: restorePurchases failed: $e');
       _isManualRestoreInFlight = false;
-      _emit(PurchaseFeedback.restoreFailed, null);
+      _emit(PurchaseFeedback.restoreFailed);
       return;
     }
 
@@ -298,7 +226,7 @@ class _StoreKitPurchaseService extends PurchaseService {
     // give them a short window before declaring the restore empty.
     await Future<void>.delayed(const Duration(seconds: 2));
     if (!_manualRestoreFoundPurchase) {
-      _emit(PurchaseFeedback.restoreEmpty, null);
+      _emit(PurchaseFeedback.restoreEmpty);
     }
     _isManualRestoreInFlight = false;
   }
@@ -315,9 +243,8 @@ class _StoreKitPurchaseService extends PurchaseService {
 
   Future<void> _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
-      final entitlement = _entitlementsByProductId[purchase.productID];
-      if (entitlement != null) {
-        await _handlePurchase(entitlement, purchase);
+      if (purchase.productID == PurchaseConfig.removeAdsProductId) {
+        await _handlePurchase(purchase);
       }
 
       if (purchase.pendingCompletePurchase) {
@@ -326,72 +253,63 @@ class _StoreKitPurchaseService extends PurchaseService {
     }
   }
 
-  Future<void> _handlePurchase(
-    _ProductEntitlement entitlement,
-    PurchaseDetails purchase,
-  ) async {
+  Future<void> _handlePurchase(PurchaseDetails purchase) async {
     switch (purchase.status) {
       case PurchaseStatus.pending:
         _isPurchasePending = true;
         notifyListeners();
-        if (entitlement.isManualBuyInFlight) {
-          _emit(PurchaseFeedback.purchasePending, entitlement.product);
-        }
+        if (_isManualBuyInFlight) _emit(PurchaseFeedback.purchasePending);
         break;
 
       case PurchaseStatus.error:
         _isPurchasePending = false;
         notifyListeners();
-        if (entitlement.isManualBuyInFlight) {
-          _emit(PurchaseFeedback.purchaseFailed, entitlement.product);
-        }
-        entitlement.isManualBuyInFlight = false;
+        if (_isManualBuyInFlight) _emit(PurchaseFeedback.purchaseFailed);
+        _isManualBuyInFlight = false;
         break;
 
       case PurchaseStatus.canceled:
         _isPurchasePending = false;
         notifyListeners();
-        if (entitlement.isManualBuyInFlight) {
-          _emit(PurchaseFeedback.purchaseCancelled, entitlement.product);
-        }
-        entitlement.isManualBuyInFlight = false;
+        if (_isManualBuyInFlight) _emit(PurchaseFeedback.purchaseCancelled);
+        _isManualBuyInFlight = false;
         break;
 
       case PurchaseStatus.purchased:
         _isPurchasePending = false;
-        await _grantEntitlement(entitlement);
-        if (entitlement.isManualBuyInFlight) {
-          _emit(PurchaseFeedback.purchaseSuccess, entitlement.product);
+        await _grantEntitlement();
+        if (_isManualBuyInFlight) {
+          _emit(PurchaseFeedback.purchaseSuccess);
         } else if (_isManualRestoreInFlight &&
             !_manualRestoreFoundPurchase) {
           _manualRestoreFoundPurchase = true;
-          _emit(PurchaseFeedback.restoreSuccess, entitlement.product);
+          _emit(PurchaseFeedback.restoreSuccess);
         }
-        entitlement.isManualBuyInFlight = false;
+        _isManualBuyInFlight = false;
         break;
 
       case PurchaseStatus.restored:
         _isPurchasePending = false;
-        await _grantEntitlement(entitlement);
+        await _grantEntitlement();
         if (_isManualRestoreInFlight && !_manualRestoreFoundPurchase) {
           _manualRestoreFoundPurchase = true;
-          _emit(PurchaseFeedback.restoreSuccess, entitlement.product);
+          _emit(PurchaseFeedback.restoreSuccess);
         }
         break;
     }
   }
 
-  Future<void> _grantEntitlement(_ProductEntitlement entitlement) async {
-    if (entitlement.isOwned) return;
-    entitlement.isOwned = true;
+  Future<void> _grantEntitlement() async {
+    if (_isAdsRemoved) return;
+    _isAdsRemoved = true;
     _prefs ??= await SharedPreferences.getInstance();
-    await _prefs?.setBool(entitlement.prefsKey, true);
+    await _prefs?.setBool(_prefsKeyAdsRemoved, true);
     notifyListeners();
   }
 
-  void _emit(PurchaseFeedback type, PurchaseProduct? product) {
+  void _emit(PurchaseFeedback event) {
     if (!_feedbackController.isClosed) {
-      _feedbackController.add(PurchaseFeedbackEvent(type, product: product));
+      _feedbackController.add(event);
     }
   }
 
@@ -399,19 +317,15 @@ class _StoreKitPurchaseService extends PurchaseService {
   Future<void> resetForDebug() async {
     if (!kDebugMode) return;
 
-    for (final entitlement in _entitlementsByProductId.values) {
-      entitlement.isOwned = false;
-      entitlement.productDetails = null;
-      entitlement.isManualBuyInFlight = false;
-    }
+    _isAdsRemoved = false;
+    _product = null;
     _isPurchasePending = false;
+    _isManualBuyInFlight = false;
     _isManualRestoreInFlight = false;
     _manualRestoreFoundPurchase = false;
 
     _prefs ??= await SharedPreferences.getInstance();
-    for (final entitlement in _entitlementsByProductId.values) {
-      await _prefs?.remove(entitlement.prefsKey);
-    }
+    await _prefs?.remove(_prefsKeyAdsRemoved);
     notifyListeners();
 
     await loadProducts();
@@ -426,9 +340,8 @@ class _StoreKitPurchaseService extends PurchaseService {
 }
 
 /// No-op stand-in used on every platform other than iOS (Android included).
-/// Ads keep behaving exactly as before, and no Remove Ads purchase UI is
-/// ever wired to this instance. Themes/photo mode are unlocked for free
-/// here, since there's no billing mechanism to charge Android users.
+/// Ads keep behaving exactly as before, and no purchase UI is ever wired to
+/// this instance.
 class _UnsupportedPurchaseService extends PurchaseService {
   _UnsupportedPurchaseService() : super.internal();
 
@@ -448,16 +361,10 @@ class _UnsupportedPurchaseService extends PurchaseService {
   bool get isAdsRemoved => false;
 
   @override
-  bool get isThemePackOwned => true;
-
-  @override
   ProductDetails? get removeAdsProduct => null;
 
   @override
-  ProductDetails? get themePackProduct => null;
-
-  @override
-  Stream<PurchaseFeedbackEvent> get feedback => const Stream.empty();
+  Stream<PurchaseFeedback> get feedback => const Stream.empty();
 
   @override
   Future<void> init() async {}
@@ -467,9 +374,6 @@ class _UnsupportedPurchaseService extends PurchaseService {
 
   @override
   Future<void> buyRemoveAds() async {}
-
-  @override
-  Future<void> buyThemePack() async {}
 
   @override
   Future<void> restorePurchases() async {}

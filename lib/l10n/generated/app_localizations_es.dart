@@ -58,6 +58,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String gridSizeSelectedSemanticsLabel(String size) {
+    return 'Cuadrícula ${size}x$size, seleccionada';
+  }
+
+  @override
   String get noGamesYet => 'Aún no hay partidas';
 
   @override
@@ -95,9 +100,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get productNameRemoveAds => 'Eliminar anuncios';
 
   @override
-  String get productNameThemePack => 'Paquete de temas';
-
-  @override
   String get productNameGeneric => 'Esa compra';
 
   @override
@@ -120,12 +122,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get purchaseFailedMessage => 'La compra falló. Inténtalo de nuevo.';
 
   @override
-  String get themePackPurchaseSuccessMessage =>
-      '¡Paquete de temas desbloqueado! Disfruta de los nuevos temas y el modo foto.';
-
-  @override
   String get removeAdsPurchaseSuccessMessage =>
       '¡Anuncios eliminados. Gracias por tu apoyo!';
+
+  @override
+  String get rewardedAdUnavailableMessage =>
+      'El anuncio no está disponible en este momento. Inténtalo de nuevo pronto.';
+
+  @override
+  String get rewardedAdDismissedMessage =>
+      'Mira el anuncio completo para desbloquear los temas y el modo foto.';
+
+  @override
+  String get themesUnlockedMessage =>
+      '¡Temas y modo foto desbloqueados! Disfrútalos.';
 
   @override
   String alreadyOwnedMessage(String productName) {
@@ -161,6 +171,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get hintTooltip => 'Pista';
 
   @override
+  String get pauseTooltip => 'Pausa';
+
+  @override
+  String get resumeTooltip => 'Reanudar';
+
+  @override
+  String get pausedTapToResumeLabel => 'En pausa: toca para reanudar';
+
+  @override
   String get newGameTooltip => 'Nueva partida';
 
   @override
@@ -178,6 +197,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get speedRunModeSubtitle =>
       'Animaciones más rápidas, movimiento solo con toques';
+
+  @override
+  String get speedRunModeInfoTooltip => 'Acerca del modo velocidad';
+
+  @override
+  String get speedRunModeExplanation =>
+      'En el modo velocidad, toca cualquier ficha para deslizarla hacia el espacio vacío; no es necesario tocar solo las fichas directamente adyacentes. Las animaciones también son más rápidas, para que resuelvas el rompecabezas lo más rápido posible.';
 
   @override
   String get soundEffectsLabel => 'Efectos de sonido';

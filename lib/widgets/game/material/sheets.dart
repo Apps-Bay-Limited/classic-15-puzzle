@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:classic_15_puzzle/config/ui.dart';
 import 'package:classic_15_puzzle/data/board.dart';
@@ -8,24 +7,38 @@ import 'package:classic_15_puzzle/theme/app_radii.dart';
 import 'package:classic_15_puzzle/theme/app_spacing.dart';
 import 'package:classic_15_puzzle/theme/app_typography.dart';
 import 'package:classic_15_puzzle/theme/tile_theme.dart';
-import 'package:classic_15_puzzle/widgets/about/dialog.dart';
 import 'package:classic_15_puzzle/widgets/game/board.dart';
 import 'package:classic_15_puzzle/widgets/util/photo_theme_manager.dart';
 import 'package:classic_15_puzzle/widgets/util/purchase_container.dart';
+import 'package:classic_15_puzzle/widgets/util/theme_unlock_container.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' hide AboutDialog;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-Widget createSettingsBottomSheet(
-  BuildContext context, {
-  required void Function(int) onGridSizeSelected,
-}) {
-  final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-  final colorScheme = Theme.of(context).colorScheme;
-  final ui = ConfigUiContainer.of(context);
-  final l10n = AppLocalizations.of(context)!;
+/// Full-page settings screen, pushed onto the navigator so it gets a real
+/// back button (a navigation stack) and its title sits below the status bar
+/// in an AppBar. Tapping a grid size applies it and pops back to the game.
+class SettingsPage extends StatelessWidget {
+  final int currentGridSize;
+  final void Function(int) onGridSizeSelected;
 
-  Widget createBoard({required int size}) => Column(
+  const SettingsPage({
+    super.key,
+    required this.currentGridSize,
+    required this.onGridSizeSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final ui = ConfigUiContainer.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Widget createBoard({required int size}) {
+      final isSelected = size == currentGridSize;
+
+      return Column(
         children: <Widget>[
           Container(
             margin: const EdgeInsets.all(AppSpacing.xs),
@@ -33,6 +46,9 @@ Widget createSettingsBottomSheet(
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(AppRadii.sm),
+              border: isSelected
+                  ? Border.all(color: colorScheme.primary, width: 3)
+                  : null,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -42,8 +58,11 @@ Widget createSettingsBottomSheet(
               ],
             ),
             child: Semantics(
-              label: l10n.gridSizeSemanticsLabel('$size'),
+              label: isSelected
+                  ? l10n.gridSizeSelectedSemanticsLabel('$size')
+                  : l10n.gridSizeSemanticsLabel('$size'),
               button: true,
+              selected: isSelected,
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadii.xs),
                 onTap: () {
@@ -51,25 +70,52 @@ Widget createSettingsBottomSheet(
                   onGridSizeSelected(size);
                   Navigator.of(context).pop();
                 },
-                child: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    final puzzleSize = min(
-                      min(constraints.maxWidth, constraints.maxHeight),
-                      80.0,
-                    );
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    LayoutBuilder(
+                      builder:
+                          (BuildContext context, BoxConstraints constraints) {
+                        final puzzleSize = min(
+                          min(constraints.maxWidth, constraints.maxHeight),
+                          80.0,
+                        );
 
-                    return Semantics(
-                      excludeSemantics: true,
-                      child: IgnorePointer(
-                        child: BoardWidget(
-                          board: Board.createNormal(size),
-                          onTap: null,
-                          showNumbers: false,
-                          size: puzzleSize,
+                        return Semantics(
+                          excludeSemantics: true,
+                          child: IgnorePointer(
+                            child: BoardWidget(
+                              board: Board.createNormal(size),
+                              onTap: null,
+                              showNumbers: false,
+                              size: puzzleSize,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    if (isSelected)
+                      Positioned(
+                        top: -6,
+                        right: -6,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: colorScheme.surfaceContainerHigh,
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 12,
+                            color: colorScheme.onPrimary,
+                          ),
                         ),
                       ),
-                    );
-                  },
+                  ],
                 ),
               ),
             ),
@@ -78,147 +124,118 @@ Widget createSettingsBottomSheet(
           Text(
             l10n.gridSizeLabel('$size'),
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w800,
+                  color: isSelected ? colorScheme.primary : null,
                 ),
           ),
         ],
       );
+    }
 
-  Widget content = Container(
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppSpacing.lg,
-      vertical: AppSpacing.xl,
-    ),
-    decoration: BoxDecoration(
-      color: isIOS
-          ? colorScheme.surface.withValues(alpha: 0.7)
-          : colorScheme.surface,
-      borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
-    ),
-    // A Material ancestor so the ListTiles below (About, Remove Ads,
-    // Restore Purchases, ...) paint ink splashes correctly instead of being
-    // masked by this Container's own BoxDecoration. Scrollable because the
-    // sheet's content can exceed the viewport on smaller screens.
-    child: Material(
-      type: MaterialType.transparency,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (!isIOS)
-              Container(
-                width: 40,
-                height: AppRadii.sheetHandle,
-                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(AppRadii.sheetHandle),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          l10n.settingsTitle,
+          style: AppTypography.appBarTitle(context),
+        ),
+        // Set explicitly for the same reason the game page's AppBar does — so
+        // the status bar icons contrast correctly and don't go stale after a
+        // light/dark switch.
+        systemOverlayStyle:
+            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      ),
+      // Scaffold already provides a Material ancestor, so the ListTiles below
+      // (Remove Ads, Restore Purchases, ...) paint ink splashes correctly.
+      // SafeArea'd bottom-only (the AppBar already handles the top) so the
+      // last row isn't obscured by the home indicator/gesture nav bar.
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                l10n.settingsSubtitle,
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.gridSizeSectionHeader,
+                  style: AppTypography.sectionHeader(context),
                 ),
               ),
-            Text(
-              l10n.settingsTitle,
-              style: AppTypography.dialogTitle(context),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              l10n.settingsSubtitle,
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                l10n.gridSizeSectionHeader,
-                style: AppTypography.sectionHeader(context),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  createBoard(size: 3),
+                  createBoard(size: 4),
+                  createBoard(size: 5),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                createBoard(size: 3),
-                createBoard(size: 4),
-                createBoard(size: 5),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            _SettingsToggle(
-              icon: Icons.dark_mode_rounded,
-              label: l10n.darkModeLabel,
-              value: ui?.useDarkTheme ?? false,
-              onChanged: (value) {
-                HapticFeedback.selectionClick();
-                ui?.setUseDarkTheme(value, save: true);
-              },
-            ),
-            _SettingsToggle(
-              icon: Icons.bolt_rounded,
-              label: l10n.speedRunModeLabel,
-              subtitle: l10n.speedRunModeSubtitle,
-              value: ui?.isSpeedRunModeEnabled ?? false,
-              onChanged: (value) {
-                HapticFeedback.selectionClick();
-                ui?.setSpeedRunModeEnabled(value, save: true);
-              },
-            ),
-            _SettingsToggle(
-              icon: Icons.volume_up_rounded,
-              label: l10n.soundEffectsLabel,
-              value: ui?.isSoundEnabled ?? true,
-              onChanged: (value) {
-                HapticFeedback.selectionClick();
-                ui?.setSoundEnabled(value, save: true);
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            const _RemoveAdsSection(),
-            const SizedBox(height: AppSpacing.sm),
-            const _ThemesSection(),
-            const SizedBox(height: AppSpacing.sm),
-            Semantics(
-              button: true,
-              label: l10n.aboutTitle,
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.info_outline_rounded,
-                    color: colorScheme.primary),
-                title: Text(l10n.aboutTitle,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                trailing: Icon(
-                  Icons.chevron_right_rounded,
-                  color: colorScheme.outline,
-                ),
-                onTap: () {
+              const SizedBox(height: AppSpacing.xl),
+              _SettingsToggle(
+                icon: Icons.dark_mode_rounded,
+                label: l10n.darkModeLabel,
+                value: ui?.useDarkTheme ?? false,
+                onChanged: (value) {
                   HapticFeedback.selectionClick();
-                  Navigator.of(context).pop();
-                  showDialog(
+                  ui?.setUseDarkTheme(value, save: true);
+                },
+              ),
+              _SettingsToggle(
+                icon: Icons.bolt_rounded,
+                label: l10n.speedRunModeLabel,
+                subtitle: l10n.speedRunModeSubtitle,
+                value: ui?.isSpeedRunModeEnabled ?? false,
+                onChanged: (value) {
+                  HapticFeedback.selectionClick();
+                  ui?.setSpeedRunModeEnabled(value, save: true);
+                },
+                infoTooltip: l10n.speedRunModeInfoTooltip,
+                onInfoTap: () {
+                  HapticFeedback.selectionClick();
+                  showDialog<void>(
                     context: context,
-                    builder: (context) => const AboutDialog(),
+                    builder: (context) => AlertDialog(
+                      title: Text(l10n.speedRunModeLabel),
+                      content: Text(l10n.speedRunModeExplanation),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(l10n.close),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
+              _SettingsToggle(
+                icon: Icons.volume_up_rounded,
+                label: l10n.soundEffectsLabel,
+                value: ui?.isSoundEnabled ?? true,
+                onChanged: (value) {
+                  HapticFeedback.selectionClick();
+                  ui?.setSoundEnabled(value, save: true);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const _RemoveAdsSection(),
+              const SizedBox(height: AppSpacing.sm),
+              const _ThemesSection(),
+            ],
+          ),
         ),
-      ),
-    ),
-  );
-
-  if (isIOS) {
-    content = ClipRRect(
-      borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: content,
       ),
     );
   }
-
-  return content;
 }
 
 class _SettingsToggle extends StatelessWidget {
@@ -228,12 +245,20 @@ class _SettingsToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
+  /// When set, shows a small "?" button next to [label] that calls this
+  /// instead of toggling the switch — for settings whose mechanics need
+  /// more than a one-line subtitle to explain.
+  final VoidCallback? onInfoTap;
+  final String? infoTooltip;
+
   const _SettingsToggle({
     required this.icon,
     required this.label,
     this.subtitle,
     required this.value,
     required this.onChanged,
+    this.onInfoTap,
+    this.infoTooltip,
   });
 
   @override
@@ -242,7 +267,27 @@ class _SettingsToggle extends StatelessWidget {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
       secondary: Icon(icon, color: colorScheme.primary),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          if (onInfoTap != null) ...[
+            const SizedBox(width: AppSpacing.xxs),
+            Tooltip(
+              message: infoTooltip ?? '',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadii.xs),
+                onTap: onInfoTap,
+                child: Icon(
+                  Icons.help_outline_rounded,
+                  size: 16,
+                  color: colorScheme.outline,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
       subtitle: subtitle != null
           ? Text(subtitle!,
               style: TextStyle(color: colorScheme.onSurfaceVariant))
@@ -251,14 +296,6 @@ class _SettingsToggle extends StatelessWidget {
       onChanged: onChanged,
     );
   }
-}
-
-/// @deprecated Use [createSettingsBottomSheet] instead.
-Widget createMoreBottomSheet(
-  BuildContext context, {
-  required void Function(int) call,
-}) {
-  return createSettingsBottomSheet(context, onGridSizeSelected: call);
 }
 
 /// Remove Ads purchase, Restore Purchases, and (debug builds only) a Reset
@@ -369,7 +406,7 @@ class _DebugResetIapTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.bug_report_rounded, color: Colors.red),
       title: const Text(
-        'Reset IAP (Debug)',
+        'Reset Remove Ads (Debug)',
         style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red),
       ),
       onTap: () => _confirmReset(context),
@@ -380,12 +417,12 @@ class _DebugResetIapTile extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset IAP (Debug)'),
+        title: const Text('Reset Remove Ads (Debug)'),
         content: const Text(
-          'This clears the locally cached entitlements (Remove Ads and Theme '
-          "Pack) and re-enables ads/re-locks themes. It can't revoke your "
-          'real App Store purchases — tapping Restore Purchases afterwards '
-          'will legitimately restore them.',
+          "This clears the locally cached Remove Ads entitlement and "
+          "re-enables ads. It can't revoke your real App Store purchase — "
+          'tapping Restore Purchases afterwards will legitimately restore '
+          'it.',
         ),
         actions: [
           TextButton(
@@ -405,25 +442,24 @@ class _DebugResetIapTile extends StatelessWidget {
   }
 }
 
-/// Tile palette swatches, an "Unlock Themes" purchase row when not owned,
-/// and a "Photo Mode" picker when owned. Unlike [_RemoveAdsSection], this
-/// section is never hidden: on platforms where [PurchaseContainerState.
-/// isThemePackOwned] is unconditionally `true` (Android — there's no way to
-/// charge for it), it renders directly in the owned state.
+/// Tile palette swatches, a "watch an ad to unlock" row when not unlocked,
+/// and a "Photo Mode" picker once unlocked. Unlike [_RemoveAdsSection], this
+/// section is never hidden — the unlock is a rewarded ad, available on both
+/// platforms regardless of Remove Ads status.
 class _ThemesSection extends StatelessWidget {
   const _ThemesSection();
 
   @override
   Widget build(BuildContext context) {
-    final purchase = PurchaseContainer.of(context);
+    final themeUnlock = ThemeUnlockContainer.of(context);
     final ui = ConfigUiContainer.of(context);
-    if (purchase == null || ui == null) {
+    if (themeUnlock == null || ui == null) {
       return const SizedBox.shrink();
     }
 
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
-    final isOwned = purchase.isThemePackOwned;
+    final isUnlocked = themeUnlock.isUnlocked;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -441,7 +477,7 @@ class _ThemesSection extends StatelessWidget {
                 (theme) => _ThemeSwatch(
                   theme: theme,
                   displayName: themeDisplayName(l10n, theme.id),
-                  isLocked: !isOwned && theme.id != TileThemeId.classic,
+                  isLocked: !isUnlocked && theme.id != TileThemeId.classic,
                   isSelected: !ui.isPhotoModeEnabled &&
                       ui.selectedTileThemeId == theme.id,
                   onTap: () {
@@ -453,23 +489,22 @@ class _ThemesSection extends StatelessWidget {
               .toList(),
         ),
         const SizedBox(height: AppSpacing.sm),
-        if (!isOwned)
+        if (!isUnlocked)
           Semantics(
             button: true,
             label: l10n.unlockThemesTitle,
             child: ListTile(
               contentPadding: EdgeInsets.zero,
-              leading:
-                  Icon(Icons.palette_rounded, color: colorScheme.primary),
+              leading: Icon(Icons.palette_rounded, color: colorScheme.primary),
               title: Text(l10n.unlockThemesTitle,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(l10n.unlockThemesSubtitle),
-              trailing: _ThemePackPrice(purchase: purchase),
-              onTap: purchase.isPurchasePending
+              trailing: _WatchAdTrailing(themeUnlock: themeUnlock),
+              onTap: themeUnlock.isShowingAd
                   ? null
                   : () {
                       HapticFeedback.selectionClick();
-                      purchase.buyThemePack();
+                      themeUnlock.watchAdToUnlock();
                     },
             ),
           )
@@ -500,7 +535,30 @@ class _ThemesSection extends StatelessWidget {
               },
             ),
           ),
+        if (kDebugMode) _DebugResetThemeUnlockTile(themeUnlock: themeUnlock),
       ],
+    );
+  }
+}
+
+/// Debug-only: clears the locally persisted theme unlock so the watch-ad
+/// flow can be re-tested without reinstalling. Compiled out of release
+/// builds entirely via [kDebugMode].
+class _DebugResetThemeUnlockTile extends StatelessWidget {
+  final ThemeUnlockContainerState themeUnlock;
+
+  const _DebugResetThemeUnlockTile({required this.themeUnlock});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.bug_report_rounded, color: Colors.red),
+      title: const Text(
+        'Reset Theme Unlock (Debug)',
+        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red),
+      ),
+      onTap: () => themeUnlock.resetForDebug(),
     );
   }
 }
@@ -582,14 +640,14 @@ class _ThemeSwatch extends StatelessWidget {
   }
 }
 
-class _ThemePackPrice extends StatelessWidget {
-  final PurchaseContainerState purchase;
+class _WatchAdTrailing extends StatelessWidget {
+  final ThemeUnlockContainerState themeUnlock;
 
-  const _ThemePackPrice({required this.purchase});
+  const _WatchAdTrailing({required this.themeUnlock});
 
   @override
   Widget build(BuildContext context) {
-    if (purchase.isPurchasePending || purchase.isLoadingProduct) {
+    if (themeUnlock.isShowingAd) {
       return const SizedBox(
         width: 18,
         height: 18,
@@ -597,15 +655,16 @@ class _ThemePackPrice extends StatelessWidget {
       );
     }
 
-    final product = purchase.themePackProduct;
-    if (product == null) {
+    if (!themeUnlock.isAdAvailable) {
       return Text(
         AppLocalizations.of(context)!.unavailableLabel,
         style: TextStyle(color: Theme.of(context).colorScheme.outline),
       );
     }
 
-    return Text(product.price,
-        style: const TextStyle(fontWeight: FontWeight.w700));
+    return Icon(
+      Icons.play_circle_fill_rounded,
+      color: Theme.of(context).colorScheme.primary,
+    );
   }
 }

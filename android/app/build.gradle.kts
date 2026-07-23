@@ -66,14 +66,16 @@ android {
             buildConfigField("String", "AD_BANNER_UNIT_ID", "\"${admobProperties.getProperty("AdBannerUnitId") ?: ""}\"")
             buildConfigField("String", "AD_OPEN_UNIT_ID", "\"${admobProperties.getProperty("AdOpenUnitId") ?: ""}\"")
             buildConfigField("String", "AD_INTERSTITIAL_UNIT_ID", "\"${admobProperties.getProperty("AdInterstitialUnitId") ?: ""}\"")
+            buildConfigField("String", "AD_REWARDED_UNIT_ID", "\"${admobProperties.getProperty("AdRewardedUnitId") ?: ""}\"")
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
-            
+
             manifestPlaceholders["AdMobAppId"] = "ca-app-pub-3940256099942544~3347511713"
             buildConfigField("String", "AD_BANNER_UNIT_ID", "\"ca-app-pub-3940256099942544/6300978111\"")
             buildConfigField("String", "AD_OPEN_UNIT_ID", "\"ca-app-pub-3940256099942544/3419835294\"")
             buildConfigField("String", "AD_INTERSTITIAL_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "AD_REWARDED_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
         }
     }
 }
