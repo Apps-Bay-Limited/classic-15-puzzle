@@ -24,10 +24,6 @@ void main() async {
 
   _requestConsentAndInitializeAds();
 
-  Future.delayed(const Duration(seconds: 1), () {
-    AppTrackingTransparency.requestTrackingAuthorization();
-  });
-
   InAppReviewHelper.checkAndAskForReview();
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_) {
@@ -109,8 +105,35 @@ void _setTargetPlatformForDesktop() {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Request ATT only once the first frame is actually on screen — calling
+    // it from a bare timer in main() (the previous approach) races
+    // independently of whether the app's window is truly key/active yet,
+    // and iOS silently no-ops the request if it isn't. This was flagged by
+    // App Review (Guideline 2.1): the prompt never appeared on a real
+    // device, even though it worked fine in Simulator testing where launch
+    // timing happens to be more forgiving.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (await AppTrackingTransparency.trackingAuthorizationStatus ==
+          TrackingStatus.notDetermined) {
+        // A brief extra margin after the first frame, matching the
+        // package's own recommended pattern, so the window has definitely
+        // finished becoming key before the system dialog is requested.
+        await Future.delayed(const Duration(milliseconds: 500));
+        await AppTrackingTransparency.requestTrackingAuthorization();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
